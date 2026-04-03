@@ -8,13 +8,12 @@ __pycache__/
 dist/
 build/
 
-# Data files
-src/data/*.csv
+# Data files (too large for git)
+src/data/
+src/models/
 
-# Models
-src/models/*.pkl
-
-# Streamlit
+# Streamlit cache
+.streamlit/
 .streamlit/
 *.streamlit
 
