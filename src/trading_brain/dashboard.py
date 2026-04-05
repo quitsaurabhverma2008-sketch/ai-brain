@@ -1,8 +1,8 @@
 """
-AI Brain Pro - Professional Trading Dashboard
-=============================================
-A Bloomberg-style fintech application with AI-powered trading signals,
-advanced visualizations, and comprehensive market analysis.
+AI Brain Pro - Professional Trading Terminal
+============================================
+A Bloomberg-style trading terminal with live data, advanced charting,
+and AI-powered trading signals.
 """
 
 import sys
@@ -15,24 +15,19 @@ import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
+import yfinance as yf
 import time
-import requests
-import random
-
-from data_feed import DataFeed
-from indicators import calculate_all_indicators
-from signals import SignalGenerator, Signal
-from trader import Portfolio, PositionType
+from threading import Thread
 
 st.set_page_config(
-    page_title="AI Brain Pro",
+    page_title="AI Brain Pro | Trading Terminal",
     page_icon="🧠",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # ============================================================================
-# CUSTOM CSS - BLOOMBERG STYLE + GLASSMORPHISM
+# CUSTOM CSS - BLOOMBERG TERMINAL STYLE
 # ============================================================================
 
 st.markdown("""
@@ -47,7 +42,7 @@ st.markdown("""
         --bg-primary: #0a0e17;
         --bg-secondary: #0d1117;
         --bg-card: #161b22;
-        --bg-glass: rgba(22, 27, 34, 0.8);
+        --bg-card-hover: #1c2128;
         --accent-green: #00d68f;
         --accent-red: #ff3d71;
         --accent-blue: #0095ff;
@@ -55,139 +50,237 @@ st.markdown("""
         --text-primary: #ffffff;
         --text-secondary: #8b949e;
         --border-color: #30363d;
+        --glow-green: rgba(0, 214, 143, 0.3);
+        --glow-red: rgba(255, 61, 113, 0.3);
     }
     
-    .main {
+    .stApp {
         background: var(--bg-primary);
-        color: var(--text-primary);
     }
     
-    /* Glassmorphism Cards */
-    .glass-card {
-        background: var(--bg-glass);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-    
-    /* KPI Cards */
-    .kpi-card {
-        background: linear-gradient(135deg, var(--bg-card) 0%, rgba(22, 27, 34, 0.6) 100%);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        transition: all 0.3s ease;
-    }
-    
-    .kpi-card:hover {
-        border-color: var(--accent-blue);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(0, 149, 255, 0.2);
-    }
-    
-    .kpi-value {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 28px;
-        font-weight: 700;
-        margin: 10px 0;
-    }
-    
-    .kpi-label {
-        font-size: 12px;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    .kpi-positive { color: var(--accent-green); }
-    .kpi-negative { color: var(--accent-red); }
-    .kpi-neutral { color: var(--accent-blue); }
-    
-    /* Signal Badges */
-    .signal-badge {
-        display: inline-block;
-        padding: 8px 20px;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    .signal-buy {
-        background: linear-gradient(135deg, var(--accent-green), #00a876);
-        color: #000;
-        box-shadow: 0 4px 15px rgba(0, 214, 143, 0.4);
-    }
-    
-    .signal-sell {
-        background: linear-gradient(135deg, var(--accent-red), #cc2952);
-        color: #fff;
-        box-shadow: 0 4px 15px rgba(255, 61, 113, 0.4);
-    }
-    
-    .signal-hold {
-        background: linear-gradient(135deg, #4a5568, #2d3748);
-        color: #fff;
-    }
-    
-    /* News Ticker */
-    .news-ticker {
-        background: linear-gradient(90deg, var(--bg-card), var(--bg-secondary));
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        padding: 12px 20px;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    
-    .ticker-item {
-        display: inline-block;
-        margin-right: 40px;
-        color: var(--text-secondary);
-        font-size: 13px;
-    }
-    
-    .ticker-item span {
-        color: var(--accent-green);
-        margin-right: 8px;
-    }
-    
-    /* AI Insight Box */
-    .ai-insight {
-        background: linear-gradient(135deg, rgba(0, 149, 255, 0.1), rgba(0, 214, 143, 0.05));
-        border: 1px solid rgba(0, 149, 255, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-    }
-    
-    .ai-insight-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    
-    .ai-insight-content {
-        color: var(--text-secondary);
-        line-height: 1.7;
-        font-size: 14px;
-    }
-    
-    /* Navigation */
-    .nav-header {
-        background: var(--bg-secondary);
+    /* Main Header */
+    .terminal-header {
+        background: linear-gradient(180deg, #0d1117 0%, #0a0e17 100%);
         border-bottom: 1px solid var(--border-color);
-        padding: 15px 30px;
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         position: sticky;
         top: 0;
         z-index: 100;
     }
     
-    /* Custom Scrollbar */
+    .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .brand h1 {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 20px;
+        margin: 0;
+        background: linear-gradient(90deg, #0095ff, #00d68f);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .live-badge {
+        background: var(--accent-green);
+        color: #000;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+    
+    /* KPI Cards */
+    .metric-card {
+        background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 27, 34, 0.7) 100%);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .metric-card:hover::before {
+        opacity: 1;
+    }
+    
+    .metric-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .metric-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 8px;
+    }
+    
+    .metric-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    
+    .metric-change {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        margin-top: 4px;
+    }
+    
+    .positive { color: var(--accent-green); }
+    .negative { color: var(--accent-red); }
+    .neutral { color: var(--text-secondary); }
+    
+    /* Signal Badges */
+    .signal-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 1px;
+    }
+    
+    .signal-buy {
+        background: linear-gradient(135deg, rgba(0, 214, 143, 0.2), rgba(0, 214, 143, 0.1));
+        border: 2px solid var(--accent-green);
+        color: var(--accent-green);
+        box-shadow: 0 0 20px var(--glow-green);
+    }
+    
+    .signal-sell {
+        background: linear-gradient(135deg, rgba(255, 61, 113, 0.2), rgba(255, 61, 113, 0.1));
+        border: 2px solid var(--accent-red);
+        color: var(--accent-red);
+        box-shadow: 0 0 20px var(--glow-red);
+    }
+    
+    .signal-hold {
+        background: linear-gradient(135deg, rgba(139, 148, 158, 0.2), rgba(139, 148, 158, 0.1));
+        border: 2px solid var(--text-secondary);
+        color: var(--text-secondary);
+    }
+    
+    /* News Ticker */
+    .news-ticker {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 16px;
+    }
+    
+    .news-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .news-item:last-child {
+        border-bottom: none;
+    }
+    
+    .news-sentiment {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+    
+    .sentiment-bullish { background: rgba(0, 214, 143, 0.2); color: var(--accent-green); }
+    .sentiment-bearish { background: rgba(255, 61, 113, 0.2); color: var(--accent-red); }
+    .sentiment-neutral { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
+    
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+        border-right: 1px solid var(--border-color);
+    }
+    
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        font-size: 14px;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background: var(--bg-card);
+        border-radius: 8px;
+        padding: 4px;
+        gap: 4px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border-radius: 6px;
+        padding: 10px 20px;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: var(--accent-blue) !important;
+        color: white !important;
+    }
+    
+    /* Buttons */
+    .stButton > button {
+        background: linear-gradient(135deg, var(--accent-blue), #0066cc);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 149, 255, 0.3);
+    }
+    
+    .stButton > button[data-baseweb="button"] {
+        border: none;
+    }
+    
+    /* Custom scrollbar */
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -202,163 +295,249 @@ st.markdown("""
         border-radius: 3px;
     }
     
-    ::-webkit-scrollbar-thumb:hover {
-        background: var(--text-secondary);
-    }
-    
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-        border-right: 1px solid var(--border-color);
-    }
-    
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        background: var(--bg-card);
-        border-radius: 10px;
-        padding: 5px;
-        gap: 5px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 8px;
-        padding: 10px 20px;
-        font-weight: 500;
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        background: rgba(255, 255, 255, 0.05);
-    }
-    
-    .stTabs [aria-selected="true"] {
-        background: var(--accent-blue) !important;
-        color: #fff !important;
-    }
-    
-    /* Buttons */
-    .stButton > button {
-        background: linear-gradient(135deg, var(--accent-blue), #0077cc);
-        border: none;
-        border-radius: 10px;
-        padding: 12px 28px;
-        font-weight: 600;
-        color: white;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 149, 255, 0.4);
-    }
-    
-    /* Metrics */
-    [data-testid="stMetricValue"] {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 24px !important;
-    }
-    
-    /* DataFrames */
+    /* Dataframes */
     [data-testid="stDataFrame"] {
         background: var(--bg-card);
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
+        border-radius: 8px;
     }
     
-    /* Expander */
+    /* Gauge */
+    .gauge-container {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+    }
+    
+    /* Portfolio card */
+    .portfolio-card {
+        background: linear-gradient(145deg, var(--bg-card) 0%, rgba(22, 27, 34, 0.8) 100%);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    
+    /* Trade form */
+    .trade-form {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px;
+    }
+    
+    /* Expander styling */
     [data-testid="stExpander"] {
         background: var(--bg-card);
-        border-radius: 10px;
+        border-radius: 8px;
         border: 1px solid var(--border-color);
     }
     
-    /* Headers */
-    h1, h2, h3 {
-        background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 700;
+    /* Selectbox styling */
+    [data-testid="stSelectbox"] [data-baseweb="select"] {
+        background: var(--bg-card);
+        border-color: var(--border-color);
     }
     
-    /* Code/Mono text */
-    .mono {
-        font-family: 'JetBrains Mono', monospace;
+    /* Number input styling */
+    [data-testid="stNumberInput"] [data-baseweb="input"] {
+        background: var(--bg-card);
+        border-color: var(--border-color);
+    }
+    
+    /* Date input styling */
+    [data-testid="stDateInput"] [data-baseweb="input"] {
+        background: var(--bg-card);
+        border-color: var(--border-color);
     }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ============================================================================
-# HELPER FUNCTIONS
+# SESSION STATE INITIALIZATION
 # ============================================================================
 
-@st.cache_data(ttl=300)
-def get_market_news(symbol: str = None) -> list:
-    """Fetch latest market news"""
-    headlines = [
-        ("Fed signals potential rate cut in Q2", "Bullish", "2h ago"),
-        ("Tech stocks rally on strong earnings", "Bullish", "3h ago"),
-        ("Oil prices stabilize amid geopolitical tensions", "Neutral", "4h ago"),
-        ("Crypto markets show signs of recovery", "Bullish", "5h ago"),
-        ("S&P 500 reaches new all-time high", "Bullish", "6h ago"),
-        ("Treasury yields fall on weak jobs data", "Bullish", "7h ago"),
-        ("Asian markets mixed amid China concerns", "Neutral", "8h ago"),
-        ("Retail sales exceed expectations", "Bullish", "9h ago"),
-        ("Unemployment claims drop to 3-month low", "Bullish", "10h ago"),
-        ("Manufacturing PMI shows expansion", "Bullish", "11h ago"),
+if 'trade_history' not in st.session_state:
+    st.session_state.trade_history = []
+
+if 'open_positions' not in st.session_state:
+    st.session_state.open_positions = []
+
+if 'virtual_balance' not in st.session_state:
+    st.session_state.virtual_balance = 100000.0
+
+if 'market_data' not in st.session_state:
+    st.session_state.market_data = {
+        'sp500': {'price': 4890.23, 'change': 0.45},
+        'nasdaq': {'price': 15432.56, 'change': 0.78},
+        'dow': {'price': 38123.45, 'change': -0.23},
+        'vix': {'price': 13.45, 'change': -2.1}
+    }
+
+if 'last_refresh' not in st.session_state:
+    st.session_state.last_refresh = datetime.now()
+
+if 'news_items' not in st.session_state:
+    st.session_state.news_items = [
+        ("Fed signals potential rate cut in Q2", "Bullish", "2h"),
+        ("Tech stocks rally on strong earnings", "Bullish", "3h"),
+        ("Oil prices stabilize amid tensions", "Neutral", "4h"),
+        ("Crypto markets show recovery signs", "Bullish", "5h"),
+        ("S&P 500 reaches new all-time high", "Bullish", "6h"),
     ]
-    
-    if symbol:
-        return [(f"{symbol}: {h}", t, t_) for h, t, t_ in headlines[:5]]
-    return headlines
 
 
-def generate_ai_insight(symbol: str, signal: str, rsi: float, macd: float, 
-                        trend: str, price: float) -> str:
-    """Generate AI-powered strategy explanation"""
+# ============================================================================
+# DATA FUNCTIONS
+# ============================================================================
+
+@st.cache_data(ttl=60)
+def fetch_live_data(symbol: str, period: str = "2mo", interval: str = "1h") -> pd.DataFrame:
+    """Fetch live stock data from Yahoo Finance"""
+    try:
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period, interval=interval)
+        if df.empty:
+            return pd.DataFrame()
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        return df
+    except Exception as e:
+        st.error(f"Error fetching data for {symbol}: {e}")
+        return pd.DataFrame()
+
+
+def calculate_indicators(df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate technical indicators"""
+    df = df.copy()
     
-    insights = []
+    # EMA calculations
+    df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+    df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
+    
+    # Bollinger Bands
+    df['BB_Middle'] = df['Close'].rolling(window=20).mean()
+    bb_std = df['Close'].rolling(window=20).std()
+    df['BB_Upper'] = df['BB_Middle'] + (bb_std * 2)
+    df['BB_Lower'] = df['BB_Middle'] - (bb_std * 2)
+    
+    # RSI
+    delta = df['Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    rs = gain / loss
+    df['RSI'] = 100 - (100 / (1 + rs))
+    
+    # MACD
+    ema12 = df['Close'].ewm(span=12, adjust=False).mean()
+    ema26 = df['Close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = ema12 - ema26
+    df['MACD_Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+    df['MACD_Hist'] = df['MACD'] - df['MACD_Signal']
+    
+    # Volume SMA
+    df['Volume_SMA'] = df['Volume'].rolling(window=20).mean()
+    
+    return df
+
+
+def generate_ai_signal(df: pd.DataFrame) -> tuple:
+    """Generate AI trading signal based on RSI and MA crossover"""
+    if len(df) < 50:
+        return "HOLD", 50, {}
+    
+    latest = df.iloc[-1]
+    prev = df.iloc[-2]
     
     # RSI Analysis
-    if rsi < 30:
-        insights.append(f"The RSI at {rsi:.1f} indicates **oversold conditions**, suggesting potential upward momentum.")
-    elif rsi > 70:
-        insights.append(f"The RSI at {rsi:.1f} signals **overbought territory**, warranting caution.")
-    else:
-        insights.append(f"RSI at {rsi:.1f} shows **neutral momentum** with room for movement.")
+    rsi = latest['RSI']
+    
+    # EMA Crossover
+    ema_cross = "above" if latest['EMA_20'] > latest['EMA_50'] else "below"
     
     # MACD Analysis
-    if macd > 0:
-        insights.append(f"MACD crossover is **bullish** with histogram expanding, indicating strengthening buying pressure.")
-    else:
-        insights.append(f"MACD is **bearish** at {macd:.4f}, suggesting selling pressure remains dominant.")
+    macd_bullish = latest['MACD'] > latest['MACD_Signal']
     
-    # Trend Analysis
-    if trend == "UPTREND":
-        insights.append(f"Price is trading **above key moving averages** in a confirmed uptrend structure.")
-    else:
-        insights.append(f"Price has broken below **key support levels**, indicating bearish structure.")
+    # Signal scoring
+    score = 50
     
-    # Signal Summary
-    if signal == "BUY":
-        insights.append(f"\n**AI Recommendation**: BUY {symbol} at ${price:.2f} based on multiple bullish indicators converging.")
-    elif signal == "SELL":
-        insights.append(f"\n**AI Recommendation**: SELL {symbol} at ${price:.2f} due to deteriorating technical conditions.")
-    else:
-        insights.append(f"\n**AI Recommendation**: HOLD {symbol} - await confirmation before positioning.")
+    # RSI contribution
+    if rsi < 30:
+        score += 20
+    elif rsi > 70:
+        score -= 20
+    elif rsi < 45:
+        score += 10
+    elif rsi > 55:
+        score -= 10
     
-    return "\n\n".join(insights)
+    # EMA contribution
+    if ema_cross == "above":
+        score += 15
+    else:
+        score -= 15
+    
+    # MACD contribution
+    if macd_bullish:
+        score += 15
+    else:
+        score -= 15
+    
+    # Determine signal
+    if score >= 65 and rsi < 70:
+        signal = "BUY"
+    elif score <= 35 and rsi > 30:
+        signal = "SELL"
+    else:
+        signal = "HOLD"
+    
+    details = {
+        'rsi': rsi,
+        'ema_cross': ema_cross,
+        'macd_bullish': macd_bullish,
+        'score': score,
+        'trend': 'UPTREND' if latest['EMA_20'] > latest['EMA_50'] else 'DOWNTREND'
+    }
+    
+    return signal, score, details
 
 
-def create_candlestick_chart(df: pd.DataFrame, symbol: str, show_sma: bool = True) -> go.Figure:
+def calculate_portfolio_metrics():
+    """Calculate portfolio metrics"""
+    total_invested = 0
+    current_value = 0
+    unrealized_pnl = 0
+    
+    for pos in st.session_state.open_positions:
+        total_invested += pos['entry_price'] * pos['quantity']
+        current_value += pos['current_price'] * pos['quantity']
+    
+    unrealized_pnl = current_value - total_invested
+    
+    realized_pnl = sum(t['pnl'] for t in st.session_state.trade_history)
+    
+    return {
+        'total_equity': st.session_state.virtual_balance + current_value,
+        'realized_pnl': realized_pnl,
+        'unrealized_pnl': unrealized_pnl,
+        'cash': st.session_state.virtual_balance,
+        'positions_value': current_value
+    }
+
+
+# ============================================================================
+# CHART FUNCTIONS
+# ============================================================================
+
+def create_candlestick_chart(df: pd.DataFrame, symbol: str) -> go.Figure:
     """Create professional candlestick chart with indicators"""
     
     fig = make_subplots(
-        rows=3, cols=1,
+        rows=4, cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.05,
-        row_heights=[0.6, 0.2, 0.2],
-        subplot_titles=('', '', '')
+        vertical_spacing=0.03,
+        row_heights=[0.5, 0.15, 0.15, 0.2],
+        subplot_titles=('', '', '', '')
     )
     
     # Candlestick chart
@@ -378,109 +557,117 @@ def create_candlestick_chart(df: pd.DataFrame, symbol: str, show_sma: bool = Tru
         row=1, col=1
     )
     
-    # SMA 20
-    if 'SMA_20' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['SMA_20'],
-                name='SMA 20',
-                line=dict(color='#0095ff', width=1.5)
-            ),
-            row=1, col=1
-        )
+    # EMA 20
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['EMA_20'],
+            name='EMA 20',
+            line=dict(color='#0095ff', width=1.5)
+        ),
+        row=1, col=1
+    )
     
-    # SMA 50
-    if 'SMA_50' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['SMA_50'],
-                name='SMA 50',
-                line=dict(color='#ffaa00', width=1.5)
-            ),
-            row=1, col=1
-        )
+    # EMA 50
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['EMA_50'],
+            name='EMA 50',
+            line=dict(color='#ffaa00', width=1.5)
+        ),
+        row=1, col=1
+    )
     
     # Bollinger Bands
-    if 'BB_Upper' in df.columns and 'BB_Lower' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['BB_Upper'],
-                name='BB Upper',
-                line=dict(color='#8b949e', width=1, dash='dash'),
-                showlegend=False
-            ),
-            row=1, col=1
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['BB_Lower'],
-                name='BB Lower',
-                line=dict(color='#8b949e', width=1, dash='dash'),
-                fill='tonexty',
-                fillcolor='rgba(139, 148, 158, 0.1)',
-                showlegend=False
-            ),
-            row=1, col=1
-        )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['BB_Upper'],
+            name='BB Upper',
+            line=dict(color='#8b949e', width=1, dash='dash'),
+            showlegend=False
+        ),
+        row=1, col=1
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['BB_Lower'],
+            name='BB Lower',
+            line=dict(color='#8b949e', width=1, dash='dash'),
+            fill='tonexty',
+            fillcolor='rgba(139, 148, 158, 0.08)',
+            showlegend=False
+        ),
+        row=1, col=1
+    )
     
     # RSI
-    if 'RSI' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['RSI'],
-                name='RSI',
-                line=dict(color='#9966ff', width=2)
-            ),
-            row=2, col=1
-        )
-        
-        # RSI levels
-        fig.add_hline(y=70, line_dash="dash", line_color="#ff3d71", 
-                      line_width=1, row=2, col=1)
-        fig.add_hline(y=30, line_dash="dash", line_color="#00d68f", 
-                      line_width=1, row=2, col=1)
-        fig.add_hline(y=50, line_dash="dot", line_color="#8b949e", 
-                      line_width=1, row=2, col=1)
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['RSI'],
+            name='RSI (14)',
+            line=dict(color='#9966ff', width=2),
+            fill='tozeroy',
+            fillcolor='rgba(153, 102, 255, 0.1)'
+        ),
+        row=2, col=1
+    )
+    fig.add_hline(y=70, line_dash="dash", line_color="#ff3d71", line_width=1, row=2, col=1)
+    fig.add_hline(y=30, line_dash="dash", line_color="#00d68f", line_width=1, row=2, col=1)
+    fig.add_hline(y=50, line_dash="dot", line_color="#8b949e", line_width=1, row=2, col=1)
     
     # MACD
-    if 'MACD' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index, y=df['MACD'],
-                name='MACD',
-                line=dict(color='#00d68f', width=2)
-            ),
-            row=3, col=1
-        )
-        
-        if 'MACD_Signal' in df.columns:
-            fig.add_trace(
-                go.Scatter(
-                    x=df.index, y=df['MACD_Signal'],
-                    name='Signal',
-                    line=dict(color='#ff3d71', width=2)
-                ),
-                row=3, col=1
-            )
-    
-    # Volume bars
-    colors = ['#00d68f' if df['Close'].iloc[i] >= df['Open'].iloc[i] 
-              else '#ff3d71' for i in range(len(df))]
-    
+    colors = ['#00d68f' if val >= 0 else '#ff3d71' for val in df['MACD_Hist']]
     fig.add_trace(
         go.Bar(
-            x=df.index, y=df['Volume'],
-            name='Volume',
+            x=df.index, y=df['MACD_Hist'],
+            name='MACD Hist',
             marker_color=colors,
             marker_opacity=0.7
         ),
         row=3, col=1
     )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['MACD'],
+            name='MACD',
+            line=dict(color='#0095ff', width=2)
+        ),
+        row=3, col=1
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['MACD_Signal'],
+            name='Signal',
+            line=dict(color='#ffaa00', width=2)
+        ),
+        row=3, col=1
+    )
+    
+    # Volume
+    vol_colors = ['#00d68f' if df['Close'].iloc[i] >= df['Open'].iloc[i] else '#ff3d71' 
+                  for i in range(len(df))]
+    fig.add_trace(
+        go.Bar(
+            x=df.index, y=df['Volume'],
+            name='Volume',
+            marker_color=vol_colors,
+            marker_opacity=0.7
+        ),
+        row=4, col=1
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.index, y=df['Volume_SMA'],
+            name='Vol SMA',
+            line=dict(color='#8b949e', width=1, dash='dash'),
+            showlegend=True
+        ),
+        row=4, col=1
+    )
     
     # Update layout
     fig.update_layout(
         template='plotly_dark',
-        height=600,
+        height=700,
         xaxis_rangeslider_visible=False,
         showlegend=True,
         legend=dict(
@@ -489,201 +676,59 @@ def create_candlestick_chart(df: pd.DataFrame, symbol: str, show_sma: bool = Tru
             y=1.02,
             xanchor="center",
             x=0.5,
-            bgcolor="rgba(0,0,0,0)"
+            bgcolor="rgba(0,0,0,0)",
+            font=dict(color='#8b949e')
         ),
         paper_bgcolor='#0a0e17',
         plot_bgcolor='#0a0e17',
-        font=dict(family="Inter, sans-serif", size=12),
-        margin=dict(t=60, b=40, l=60, r=40)
+        font=dict(family="Inter, sans-serif", size=11, color='#ffffff'),
+        margin=dict(t=20, b=40, l=60, r=40)
     )
     
     # Update axes
-    fig.update_xaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)', row=3, col=1)
-    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)', row=1, col=1)
-    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)', row=2, col=1)
-    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.05)', row=3, col=1)
+    fig.update_xaxes(showgrid=True, gridcolor='rgba(255,255,255,0.03)', showticklabels=True)
+    fig.update_yaxes(showgrid=True, gridcolor='rgba(255,255,255,0.03)', showticklabels=True)
     
     return fig
 
 
-def create_prediction_chart(df: pd.DataFrame, predicted_prices: list, symbol: str) -> go.Figure:
-    """Create prediction chart with confidence bands"""
+def create_sentiment_gauge(bullish_score: int) -> go.Figure:
+    """Create sentiment gauge chart"""
     
-    fig = make_subplots(
-        rows=1, cols=1,
-        shared_xaxes=True
-    )
-    
-    # Historical candles
-    fig.add_trace(
-        go.Candlestick(
-            x=df.index[-30:],
-            open=df['Open'].tail(30),
-            high=df['High'].tail(30),
-            low=df['Low'].tail(30),
-            close=df['Close'].tail(30),
-            name='Historical',
-            increasing_line_color='#00d68f',
-            decreasing_line_color='#ff3d71'
-        )
-    )
-    
-    # SMAs
-    if 'SMA_20' in df.columns:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index[-30:], y=df['SMA_20'].tail(30),
-                name='SMA 20',
-                line=dict(color='#0095ff', width=2)
-            )
-        )
-    
-    if 'SMA_50' in df.columns and len(df) >= 50:
-        fig.add_trace(
-            go.Scatter(
-                x=df.index[-30:], y=df['SMA_50'].tail(30),
-                name='SMA 50',
-                line=dict(color='#ffaa00', width=2)
-            )
-        )
-    
-    # Prediction zone
-    if predicted_prices:
-        last_date = df.index[-1]
-        if hasattr(last_date, 'tz') and last_date.tz is not None:
-            last_date = last_date.tz_localize(None)
-        pred_dates = pd.date_range(start=last_date + timedelta(hours=1), 
-                                   periods=len(predicted_prices), freq=pd.Timedelta(hours=1))
-        
-        fig.add_trace(
-            go.Scatter(
-                x=list(pred_dates),
-                y=predicted_prices,
-                name='AI Prediction',
-                mode='lines+markers',
-                line=dict(color='#00d68f', width=3, dash='dot'),
-                marker=dict(size=10, symbol='diamond')
-            )
-        )
-        
-        # Confidence bands
-        volatility = df['Close'].pct_change().std()
-        upper_band = [p * (1 + volatility * (1 + i * 0.2)) 
-                      for i, p in enumerate(predicted_prices)]
-        lower_band = [p * (1 - volatility * (1 + i * 0.2)) 
-                      for i, p in enumerate(predicted_prices)]
-        
-        fig.add_trace(
-            go.Scatter(
-                x=list(pred_dates) + list(pred_dates)[::-1],
-                y=upper_band + lower_band[::-1],
-                fill='toself',
-                fillcolor='rgba(0, 214, 143, 0.2)',
-                line=dict(color='rgba(0, 0, 0, 0)'),
-                name='Confidence Band'
-            )
-        )
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=bullish_score,
+        domain={'x': [0, 1], 'y': [0, 1]},
+        gauge={
+            'axis': {'range': [0, 100], 'tickcolor': '#8b949e'},
+            'bar': {'color': '#0095ff'},
+            'bgcolor': '#161b22',
+            'borderwidth': 2,
+            'bordercolor': '#30363d',
+            'steps': [
+                {'range': [0, 33], 'color': 'rgba(255, 61, 113, 0.3)'},
+                {'range': [33, 66], 'color': 'rgba(139, 148, 158, 0.3)'},
+                {'range': [66, 100], 'color': 'rgba(0, 214, 143, 0.3)'}
+            ],
+            'threshold': {
+                'line': {'color': '#ffffff', 'width': 4},
+                'thickness': 0.8,
+                'value': bullish_score
+            }
+        },
+        number={'font': {'color': '#ffffff', 'size': 40}}
+    ))
     
     fig.update_layout(
         template='plotly_dark',
-        height=500,
-        xaxis_rangeslider_visible=False,
-        showlegend=True,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02),
-        paper_bgcolor='#0a0e17',
-        plot_bgcolor='#0a0e17',
-        font=dict(family="Inter, sans-serif", size=12),
-        margin=dict(t=40, b=40, l=60, r=40)
+        height=200,
+        paper_bgcolor='transparent',
+        plot_bgcolor='transparent',
+        showlegend=False,
+        margin=dict(t=20, b=20, l=20, r=20)
     )
     
     return fig
-
-
-def run_backtest(df: pd.DataFrame, initial_capital: float, 
-                 start_date: datetime, end_date: datetime) -> dict:
-    """Run backtest on historical data"""
-    
-    df_work = df.copy()
-    if df_work.index.tzinfo is not None:
-        df_work.index = df_work.index.tz_localize(None)
-    
-    start_ts = pd.Timestamp(start_date)
-    end_ts = pd.Timestamp(end_date) + pd.Timedelta(days=1)
-    
-    df_test = df_work[(df_work.index >= start_ts) & (df_work.index < end_ts)].copy()
-    
-    if len(df_test) < 50:
-        return {'error': 'Insufficient data for backtest'}
-    
-    capital = initial_capital
-    position = None
-    trades = []
-    equity_curve = [initial_capital]
-    
-    df_test = calculate_all_indicators(df_test)
-    
-    for i in range(50, len(df_test)):
-        row = df_test.iloc[i]
-        prev_row = df_test.iloc[i-1]
-        
-        signal_gen = SignalGenerator()
-        
-        # Generate signal
-        if position is None:
-            # Check for buy signal
-            if (prev_row['RSI'] < 40 and row['RSI'] > prev_row['RSI']) or \
-               (prev_row['MACD'] < prev_row['MACD_Signal'] and 
-                row['MACD'] > row['MACD_Signal']):
-                # Buy
-                shares = capital // row['Close']
-                if shares > 0:
-                    position = {
-                        'entry_price': row['Close'],
-                        'shares': shares,
-                        'entry_date': df_test.index[i]
-                    }
-        
-        elif position is not None:
-            # Check for sell signal
-            pnl = (row['Close'] - position['entry_price']) * position['shares']
-            pnl_pct = (row['Close'] - position['entry_price']) / position['entry_price'] * 100
-            
-            if pnl_pct >= 5 or pnl_pct <= -2 or \
-               (prev_row['RSI'] > 65 and row['RSI'] < prev_row['RSI']):
-                # Sell
-                trades.append({
-                    'entry': position['entry_price'],
-                    'exit': row['Close'],
-                    'pnl': pnl,
-                    'pnl_pct': pnl_pct,
-                    'date': df_test.index[i]
-                })
-                capital += pnl
-                equity_curve.append(capital)
-                position = None
-        
-        equity_curve.append(capital if position is None else 
-                           capital + (row['Close'] - position['entry_price']) * position['shares'])
-    
-    # Calculate metrics
-    if not trades:
-        return {'error': 'No trades generated'}
-    
-    wins = [t for t in trades if t['pnl'] > 0]
-    losses = [t for t in trades if t['pnl'] <= 0]
-    
-    return {
-        'trades': trades,
-        'equity_curve': equity_curve,
-        'final_capital': capital,
-        'total_return': (capital - initial_capital) / initial_capital * 100,
-        'win_rate': len(wins) / len(trades) * 100,
-        'total_trades': len(trades),
-        'avg_win': sum(t['pnl'] for t in wins) / len(wins) if wins else 0,
-        'avg_loss': sum(t['pnl'] for t in losses) / len(losses) if losses else 0,
-        'max_drawdown': min(equity_curve) - max(equity_curve),
-        'profit_factor': abs(sum(t['pnl'] for t in wins) / sum(t['pnl'] for t in losses)) if losses else float('inf')
-    }
 
 
 # ============================================================================
@@ -691,27 +736,19 @@ def run_backtest(df: pd.DataFrame, initial_capital: float,
 # ============================================================================
 
 def main():
-    # Initialize session state
-    if 'portfolio' not in st.session_state:
-        st.session_state.portfolio = Portfolio(100000)
-    
-    if 'selected_symbol' not in st.session_state:
-        st.session_state.selected_symbol = 'AAPL'
-    
     # Header
     st.markdown("""
-    <div style="display: flex; justify-content: space-between; align-items: center; 
-                padding: 20px 30px; background: var(--bg-secondary); 
-                border-bottom: 1px solid var(--border-color);">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <h1 style="margin: 0; font-size: 28px;">🧠 AI Brain Pro</h1>
-            <span style="background: var(--accent-green); color: #000; 
-                        padding: 4px 12px; border-radius: 20px; 
-                        font-size: 11px; font-weight: 600;">LIVE</span>
+    <div class="terminal-header">
+        <div class="brand">
+            <h1>🧠 AI Brain Pro</h1>
+            <span class="live-badge">● LIVE</span>
         </div>
         <div style="display: flex; align-items: center; gap: 20px;">
-            <span class="mono" style="color: var(--text-secondary); font-size: 13px;">
-                {} | Bloomberg Terminal Style
+            <span style="font-family: 'JetBrains Mono'; color: var(--text-secondary); font-size: 12px;">
+                {} EST
+            </span>
+            <span style="font-family: 'JetBrains Mono'; color: var(--accent-green); font-size: 12px;">
+                ● Connected
             </span>
         </div>
     </div>
@@ -719,525 +756,394 @@ def main():
     
     # Sidebar
     with st.sidebar:
-        st.markdown("### 📊 Navigation")
+        st.markdown("### 📊 Market Overview")
         
-        selected_menu = st.radio(
-            "Select Section",
-            ["📈 Dashboard", "🔮 AI Prediction", "📊 Backtest", "💹 Trade Now", "⚙️ Settings"],
-            index=0
-        )
+        # Market data cards
+        mkt = st.session_state.market_data
         
-        st.markdown("---")
-        
-        # Symbol Selection
-        st.markdown("### 🎯 Symbol")
-        
-        default_stocks = [
-            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'JPM', 
-            'V', 'PG', 'UNH', 'HD', 'BAC', 'ADBE', 'NFLX', 'INTC',
-            'BTC-USD', 'ETH-USD', 'SOL-USD', 'SPY', 'QQQ', 'GLD'
-        ]
-        
-        symbol = st.selectbox("Select Market", default_stocks, index=0)
-        st.session_state.selected_symbol = symbol
-        
-        st.markdown("---")
-        
-        # Quick Stats
-        st.markdown("### 📉 Market Status")
-        st.markdown("""
-        <div class="glass-card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span style="color: var(--text-secondary);">S&P 500</span>
-                <span class="mono" style="color: var(--accent-green);">4,890.23</span>
+        for name, data, key in [
+            ("S&P 500", mkt['sp500'], "SPX"),
+            ("NASDAQ", mkt['nasdaq'], "IXIC"),
+            ("DOW JONES", mkt['dow'], "DJI"),
+            ("VIX", mkt['vix'], "VIX")
+        ]:
+            change_class = "positive" if data['change'] >= 0 else "negative"
+            change_sign = "+" if data['change'] >= 0 else ""
+            st.markdown(f"""
+            <div class="metric-card" style="padding: 12px 16px; margin-bottom: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--text-secondary); font-size: 11px;">{name}</span>
+                    <span class="metric-change {change_class}" style="font-size: 10px;">
+                        {change_sign}{data['change']:.2f}%
+                    </span>
+                </div>
+                <div class="metric-value" style="font-size: 18px; margin-top: 4px;">
+                    {data['price']:,.2f}
+                </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span style="color: var(--text-secondary);">NASDAQ</span>
-                <span class="mono" style="color: var(--accent-green);">15,432.56</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                <span style="color: var(--text-secondary);">DOW</span>
-                <span class="mono" style="color: var(--accent-red);">38,123.45</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-secondary);">VIX</span>
-                <span class="mono" style="color: var(--accent-gold);">13.45</span>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
         st.markdown("---")
         
         # News Section
-        st.markdown("### 📰 Latest News")
-        news = get_market_news(symbol)
-        for headline, sentiment, time_ in news[:4]:
-            color = "var(--accent-green)" if sentiment == "Bullish" else "var(--accent-red)" if sentiment == "Bearish" else "var(--text-secondary)"
+        st.markdown("### 📰 Market News")
+        
+        for headline, sentiment, time_ in st.session_state.news_items[:4]:
+            sent_class = f"sentiment-{sentiment.lower()}"
             st.markdown(f"""
-            <div style="border-left: 3px solid {color}; padding-left: 10px; margin-bottom: 10px;">
-                <span style="font-size: 12px; color: var(--text-secondary);">{time_}</span>
-                <p style="margin: 5px 0; font-size: 13px;">{headline}</p>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    # ============ DASHBOARD ============
-    if selected_menu == "📈 Dashboard":
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        portfolio = st.session_state.portfolio
-        stats = portfolio.get_stats()
-        
-        with col1:
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Portfolio Value</div>
-                <div class="kpi-value mono">${stats.get('current_capital', 100000):,.0f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            pnl = stats.get('total_pnl', 0)
-            color = "kpi-positive" if pnl >= 0 else "kpi-negative"
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Total P&L</div>
-                <div class="kpi-value mono {color}">${pnl:,.2f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            wr = stats.get('win_rate', 0)
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Win Rate</div>
-                <div class="kpi-value mono {'kpi-positive' if wr >= 50 else 'kpi-negative'}">{wr:.1f}%</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            pf = stats.get('profit_factor', 0)
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Profit Factor</div>
-                <div class="kpi-value mono {'kpi-positive' if pf >= 1.5 else 'kpi-neutral'}">{pf:.2f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col5:
-            tt = stats.get('total_trades', 0)
-            st.markdown(f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Total Trades</div>
-                <div class="kpi-value mono">{tt}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # Analysis Section
-        col_left, col_right = st.columns([2, 1])
-        
-        with col_left:
-            st.markdown("### 📊 Technical Analysis")
-            
-            # Fetch and analyze
-            data_feed = DataFeed()
-            df = data_feed.get_intraday_data(symbol, "1h", "30d")
-            
-            if df is not None and len(df) > 50:
-                df = calculate_all_indicators(df)
-                
-                # Create chart
-                fig = create_candlestick_chart(df, symbol)
-                st.plotly_chart(fig, width='stretch')
-            else:
-                st.error("Insufficient data for analysis")
-        
-        with col_right:
-            st.markdown("### 🤖 AI Signal")
-            
-            if df is not None:
-                signal_gen = SignalGenerator()
-                signal, score, details = signal_gen.generate_signal(df)
-                
-                latest = df.iloc[-1]
-                
-                # Signal Badge
-                if signal == Signal.BUY:
-                    st.markdown('<span class="signal-badge signal-buy">BUY</span>', 
-                               unsafe_allow_html=True)
-                elif signal == Signal.SELL:
-                    st.markdown('<span class="signal-badge signal-sell">SELL</span>', 
-                               unsafe_allow_html=True)
-                else:
-                    st.markdown('<span class="signal-badge signal-hold">HOLD</span>', 
-                               unsafe_allow_html=True)
-                
-                # Key Metrics
-                st.markdown(f"""
-                <div class="glass-card" style="margin-top: 20px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: var(--text-secondary);">Price</span>
-                        <span class="mono" style="font-size: 18px; font-weight: 600;">${latest['Close']:.2f}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: var(--text-secondary);">RSI (14)</span>
-                        <span class="mono" style="color: {'var(--accent-green)' if latest['RSI'] < 30 else 'var(--accent-red)' if latest['RSI'] > 70 else 'var(--text-primary)'};">{latest['RSI']:.1f}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: var(--text-secondary);">MACD</span>
-                        <span class="mono" style="color: {'var(--accent-green)' if latest['MACD'] > latest['MACD_Signal'] else 'var(--accent-red)'};">{latest['MACD']:.4f}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                        <span style="color: var(--text-secondary);">Trend</span>
-                        <span style="color: {'var(--accent-green)' if details.get('trend') == 'UPTREND' else 'var(--accent-red)'};">{details.get('trend', 'N/A')}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary);">Signal Score</span>
-                        <span class="mono">{score:.0f}/100</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        st.markdown("---")
-        
-        # AI Insights Section
-        st.markdown("### 💡 AI Strategy Insights")
-        
-        if df is not None:
-            insight = generate_ai_insight(
-                symbol,
-                signal.value,
-                latest['RSI'],
-                latest['MACD'],
-                details.get('trend', 'N/A'),
-                latest['Close']
-            )
-            
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            st.markdown(f"""
-            <div class="ai-insight">
-                <div class="ai-insight-header">
-                    <span style="font-size: 24px;">🤖</span>
-                    <span style="font-weight: 600; font-size: 16px;">AI Analysis Engine</span>
-                    <span style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">
-                        Generated at {timestamp} EST
-                    </span>
-                </div>
-                <div class="ai-insight-content">
-                    {insight}
+            <div class="news-item">
+                <span class="news-sentiment {sent_class}">{sentiment}</span>
+                <div style="flex: 1;">
+                    <p style="margin: 0; font-size: 12px; color: var(--text-primary);">{headline}</p>
+                    <span style="font-size: 10px; color: var(--text-secondary);">{time_} ago</span>
                 </div>
             </div>
             """, unsafe_allow_html=True)
         
         st.markdown("---")
         
-        # Live Signals Table
-        st.markdown("### 📈 Top Trading Signals")
+        # Sentiment Gauge
+        st.markdown("### 🎯 Market Sentiment")
+        sentiment_score = 55
+        st.plotly_chart(create_sentiment_gauge(sentiment_score), use_container_width=True)
         
-        signals_data = []
-        for sym in default_stocks[:10]:
-            try:
-                df_s = data_feed.get_intraday_data(sym, "1h", "30d")
-                if df_s is not None and len(df_s) > 50:
-                    df_s = calculate_all_indicators(df_s)
-                    sig, sc, det = signal_gen.generate_signal(df_s)
-                    latest_s = df_s.iloc[-1]
-                    
-                    signals_data.append({
-                        'Symbol': sym,
-                        'Price': f"${latest_s['Close']:.2f}",
-                        'Signal': sig.value,
-                        'RSI': f"{latest_s['RSI']:.1f}",
-                        'Trend': det.get('trend', 'N/A'),
-                        'Score': f"{sc:.0f}"
-                    })
-            except:
-                pass
-        
-        if signals_data:
-            df_signals = pd.DataFrame(signals_data)
-            
-            # Color the Signal column
-            def color_signal(val):
-                if val == 'BUY':
-                    return 'color: var(--accent-green); font-weight: 600'
-                elif val == 'SELL':
-                    return 'color: var(--accent-red); font-weight: 600'
-                return ''
-            
-            st.dataframe(
-                df_signals.style.map(color_signal, subset=['Signal']),
-                width='stretch',
-                hide_index=True
-            )
-    
-    # ============ AI PREDICTION ============
-    elif selected_menu == "🔮 AI Prediction":
-        st.markdown("### 🔮 AI Price Prediction Engine")
-        
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            duration = st.select_slider(
-                "Prediction Horizon",
-                options=['1h', '4h', '12h', '24h', '48h', '1w'],
-                value='24h'
-            )
-            
-            confidence = st.slider("Confidence Threshold", 50, 95, 70)
-            
-            show_bands = st.checkbox("Show Confidence Bands", value=True)
-            show_indicators = st.checkbox("Show Technical Indicators", value=True)
-            
-            if st.button("🔮 Generate Prediction", width='stretch'):
-                with st.spinner("Analyzing market data..."):
-                    time.sleep(2)  # Simulate processing
-        
-        with col2:
-            data_feed = DataFeed()
-            df = data_feed.get_intraday_data(symbol, "1h", "60d")
-            
-            if df is not None:
-                df = calculate_all_indicators(df)
-                
-                # Generate mock predictions
-                last_price = df['Close'].iloc[-1]
-                steps = {'1h': 1, '4h': 4, '12h': 12, '24h': 24, '48h': 48, '1w': 168}[duration]
-                
-                # Realistic prediction with mean reversion
-                predictions = []
-                current = last_price
-                volatility = df['Close'].pct_change().std()
-                
-                for i in range(min(steps, 24)):
-                    change = np.random.normal(0.001, volatility * 0.5)
-                    current = current * (1 + change)
-                    predictions.append(current)
-                
-                fig = create_prediction_chart(df, predictions, symbol)
-                st.plotly_chart(fig, width='stretch')
-                
-                # Prediction Summary
-                pred_change = ((predictions[-1] - last_price) / last_price) * 100
-                
-                col_p1, col_p2, col_p3 = st.columns(3)
-                
-                with col_p1:
-                    st.metric("Current Price", f"${last_price:.2f}")
-                
-                with col_p2:
-                    st.metric("Predicted Price", f"${predictions[-1]:.2f}", 
-                             f"{pred_change:+.2f}%")
-                
-                with col_p3:
-                    st.metric("Confidence", f"{confidence}%")
-                
-                # AI Prediction Summary
-                st.markdown(f"""
-                <div class="ai-insight">
-                    <div class="ai-insight-header">
-                        <span style="font-size: 24px;">📊</span>
-                        <span style="font-weight: 600;">Prediction Summary</span>
-                    </div>
-                    <div class="ai-insight-content">
-                        Based on technical analysis and ML models, the AI predicts a **{'bullish' if pred_change > 0 else 'bearish'}** 
-                        trend for {symbol} over the next {duration}. The expected price movement of **{pred_change:+.2f}%** 
-                        is supported by:
-                        <ul>
-                            <li>RSI indicating {'oversold' if df.iloc[-1]['RSI'] < 50 else 'overbought'} conditions</li>
-                            <li>{'Bullish' if df.iloc[-1]['MACD'] > df.iloc[-1]['MACD_Signal'] else 'Bearish'} MACD crossover</li>
-                            <li>Volume analysis showing {'increasing' if df.iloc[-1]['Volume'] > df['Volume'].mean() else 'decreasing'} activity</li>
-                        </ul>
-                        <strong>⚠️ This is not financial advice. Trade responsibly.</strong>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-    
-    # ============ BACKTEST ============
-    elif selected_menu == "📊 Backtest":
-        st.markdown("### 📊 Strategy Backtest")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            start_date = st.date_input("Start Date", datetime.now() - timedelta(days=365))
-        
-        with col2:
-            end_date = st.date_input("End Date", datetime.now())
-        
-        with col3:
-            initial_capital = st.number_input("Initial Capital ($)", 
-                                             min_value=1000, 
-                                             value=10000, 
-                                             step=1000)
-        
-        strategy = st.selectbox(
-            "Trading Strategy",
-            ["RSI + MACD Crossover", "Bollinger Bands", "SMA Crossover", "All Signals Combined"]
-        )
-        
-        if st.button("▶️ Run Backtest", width='stretch'):
-            with st.spinner("Running backtest simulation..."):
-                data_feed = DataFeed()
-                df = data_feed.get_intraday_data(symbol, "1h", "2y")
-                
-                if df is not None:
-                    results = run_backtest(
-                        df, 
-                        initial_capital,
-                        datetime.combine(start_date, datetime.min.time()),
-                        datetime.combine(end_date, datetime.max.time())
-                    )
-                    
-                    if 'error' not in results:
-                        # Metrics
-                        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-                        
-                        with col_m1:
-                            st.metric("Total Return", f"{results['total_return']:.2f}%",
-                                     f"${results['final_capital'] - initial_capital:,.2f}")
-                        
-                        with col_m2:
-                            st.metric("Win Rate", f"{results['win_rate']:.1f}%")
-                        
-                        with col_m3:
-                            st.metric("Profit Factor", f"{results['profit_factor']:.2f}")
-                        
-                        with col_m4:
-                            st.metric("Total Trades", results['total_trades'])
-                        
-                        st.markdown("---")
-                        
-                        # Equity Curve
-                        st.markdown("### 📈 Equity Curve")
-                        
-                        fig_eq = go.Figure()
-                        fig_eq.add_trace(go.Scatter(
-                            x=list(range(len(results['equity_curve']))),
-                            y=results['equity_curve'],
-                            mode='lines',
-                            fill='tozeroy',
-                            fillcolor='rgba(0, 214, 143, 0.2)',
-                            line=dict(color='#00d68f', width=2)
-                        ))
-                        
-                        fig_eq.update_layout(
-                            template='plotly_dark',
-                            height=400,
-                            paper_bgcolor='#0a0e17',
-                            plot_bgcolor='#0a0e17',
-                            xaxis_title="Trades",
-                            yaxis_title="Portfolio Value ($)"
-                        )
-                        
-                        st.plotly_chart(fig_eq, width='stretch')
-                        
-                        # Trade History
-                        st.markdown("### 📋 Trade History")
-                        
-                        trades_df = pd.DataFrame(results['trades'])
-                        if not trades_df.empty:
-                            trades_df['pnl'] = trades_df['pnl'].apply(lambda x: f"${x:.2f}")
-                            trades_df['pnl_pct'] = trades_df['pnl_pct'].apply(lambda x: f"{x:+.2f}%")
-                            trades_df['date'] = trades_df['date'].dt.strftime('%Y-%m-%d %H:%M')
-                            trades_df = trades_df.rename(columns={
-                                'entry': 'Entry', 'exit': 'Exit', 'pnl': 'P&L', 
-                                'pnl_pct': 'P&L %', 'date': 'Date'
-                            })
-                            st.dataframe(trades_df, width='stretch', hide_index=True)
-                    else:
-                        st.error(results['error'])
-                else:
-                    st.error("Could not fetch data for backtesting")
-    
-    # ============ TRADE NOW ============
-    elif selected_menu == "💹 Trade Now":
-        st.markdown("### 💹 Paper Trading")
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            trade_type = st.radio("Trade Type", ["BUY", "SELL"], horizontal=True)
-        
-        with col2:
-            quantity = st.number_input("Quantity", min_value=1, value=10, step=1)
-        
-        with col3:
-            order_type = st.selectbox("Order Type", ["MARKET", "LIMIT"])
-        
-        if st.button("📊 Execute Trade", width='stretch'):
-            data_feed = DataFeed()
-            quote = data_feed.get_live_quote(symbol)
-            if quote and isinstance(quote, dict) and quote.get('price'):
-                st.success(f"Order executed: {trade_type} {quantity} {symbol} @ ${quote['price']:.2f}")
-            else:
-                st.error(f"Could not fetch price for {symbol}")
-        
-        st.markdown("---")
-        
-        # Open Positions
-        st.markdown("### 📁 Open Positions")
-        
-        portfolio = st.session_state.portfolio
-        if portfolio.positions:
-            for pos in portfolio.positions:
-                st.markdown(f"""
-                <div class="glass-card" style="margin-bottom: 10px;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span style="font-weight: 600;">{pos.symbol}</span>
-                        <span>{pos.quantity} shares</span>
-                        <span class="mono">${pos.entry_price:.2f}</span>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("No open positions. Execute a trade to get started!")
-        
-        st.markdown("---")
-        
-        # Trade History
-        st.markdown("### 📜 Trade History")
-        
-        if portfolio.trade_history:
-            history_df = pd.DataFrame([{
-                'Symbol': t.symbol,
-                'Type': t.position_type,
-                'Entry': f"${t.entry_price:.2f}",
-                'Exit': f"${t.exit_price:.2f}",
-                'P&L': f"${t.pnl:.2f}",
-                'P&L %': f"{t.pnl_percent:.2f}%"
-            } for t in portfolio.trade_history[-10:]])
-            
-            st.dataframe(history_df, width='stretch', hide_index=True)
-    
-    # ============ SETTINGS ============
-    else:
-        st.markdown("### ⚙️ Settings")
-        
-        st.markdown("""
-        <div class="glass-card">
-            <h4>Account Configuration</h4>
-            <p style="color: var(--text-secondary);">Configure your trading preferences and risk management settings.</p>
+        st.markdown(f"""
+        <div style="text-align: center; margin-top: -10px;">
+            <span style="color: var(--accent-green); font-weight: 600;">Bullish</span>
+            <span style="color: var(--text-secondary);"> | Neutral | </span>
+            <span style="color: var(--accent-red);">Bearish</span>
         </div>
         """, unsafe_allow_html=True)
+    
+    # Main Content Area
+    st.markdown("---")
+    
+    # Symbol Selection
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        symbol_options = [
+            'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'META', 'TSLA', 'JPM',
+            'BTC-USD', 'ETH-USD', 'SOL-USD', 'SPY', 'QQQ', 'GLD', 'TQQQ'
+        ]
+        symbol = st.selectbox("Select Symbol", symbol_options, index=0)
+    
+    with col2:
+        period = st.selectbox("Period", ["1mo", "3mo", "6mo", "1y", "2y"], index=2)
+    
+    with col3:
+        if st.button("🔄 Refresh Data", use_container_width=True):
+            st.rerun()
+    
+    # Portfolio Summary
+    metrics = calculate_portfolio_metrics()
+    
+    col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
+    
+    with col_p1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Total Equity</div>
+            <div class="metric-value">${metrics['total_equity']:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_p2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Cash Balance</div>
+            <div class="metric-value">${metrics['cash']:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_p3:
+        unreal_class = "positive" if metrics['unrealized_pnl'] >= 0 else "negative"
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Unrealized P&L</div>
+            <div class="metric-value {unreal_class}">${metrics['unrealized_pnl']:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_p4:
+        real_class = "positive" if metrics['realized_pnl'] >= 0 else "negative"
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Realized P&L</div>
+            <div class="metric-value {real_class}">${metrics['realized_pnl']:,.2f}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_p5:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-label">Open Positions</div>
+            <div class="metric-value">{len(st.session_state.open_positions)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Fetch and prepare data
+    df = fetch_live_data(symbol, period=period)
+    
+    if not df.empty:
+        df = calculate_indicators(df)
+        signal, score, details = generate_ai_signal(df)
+        latest_price = df['Close'].iloc[-1]
+        price_change = df['Close'].iloc[-1] - df['Open'].iloc[0]
+        price_change_pct = (price_change / df['Open'].iloc[0]) * 100
+    else:
+        df = pd.DataFrame()
+        signal, score, details = "HOLD", 50, {}
+        latest_price = 0
+        price_change = 0
+        price_change_pct = 0
+    
+    # Tabs for main content
+    tab1, tab2, tab3 = st.tabs(["📈 Live Chart", "🔮 AI Analysis", "📜 Trade Logs"])
+    
+    with tab1:
+        if not df.empty:
+            # AI Signal Card
+            col_s1, col_s2 = st.columns([3, 1])
+            
+            with col_s1:
+                st.plotly_chart(create_candlestick_chart(df, symbol), use_container_width=True)
+            
+            with col_s2:
+                st.markdown("### 🤖 AI Signal")
+                
+                if signal == "BUY":
+                    st.markdown('<div class="signal-badge signal-buy">📈 BUY</div>', unsafe_allow_html=True)
+                elif signal == "SELL":
+                    st.markdown('<div class="signal-badge signal-sell">📉 SELL</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown('<div class="signal-badge signal-hold">⏸️ HOLD</div>', unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div class="metric-card" style="margin-top: 16px;">
+                    <div class="metric-label">Signal Score</div>
+                    <div class="metric-value">{score}/100</div>
+                    <div class="metric-change neutral">Confidence: {abs(score-50)*2}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("---")
+                
+                if details:
+                    st.markdown("""
+                    <div style="font-size: 13px;">
+                        <p><strong>RSI (14):</strong> <span class="{}"> {:.1f}</span></p>
+                        <p><strong>Trend:</strong> <span class="{}">{}</span></p>
+                        <p><strong>EMA:</strong> <span class="{}">{} EMA</span></p>
+                        <p><strong>MACD:</strong> <span class="{}">{}</span></p>
+                    </div>
+                    """.format(
+                        "positive" if details['rsi'] < 50 else "negative",
+                        details['rsi'],
+                        "positive" if details['trend'] == 'UPTREND' else "negative",
+                        details['trend'],
+                        "positive" if details['ema_cross'] == 'above' else "negative",
+                        details['ema_cross'].upper(),
+                        "positive" if details['macd_bullish'] else "negative",
+                        "BULLISH" if details['macd_bullish'] else "BEARISH"
+                    ), unsafe_allow_html=True)
+        else:
+            st.warning("No data available for the selected symbol. Please try another.")
+    
+    with tab2:
+        col_ai1, col_ai2 = st.columns([1, 1])
         
-        col_s1, col_s2 = st.columns(2)
+        with col_ai1:
+            st.markdown("### 🧠 AI Trading Strategy")
+            
+            if details:
+                st.markdown(f"""
+                <div class="portfolio-card">
+                    <h4 style="margin-top: 0;">Signal Analysis for {symbol}</h4>
+                    <hr style="border-color: var(--border-color);">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                        <div>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 11px;">CURRENT PRICE</p>
+                            <p style="font-family: 'JetBrains Mono'; font-size: 24px; margin: 4px 0;">${latest_price:.2f}</p>
+                            <p class="{'positive' if price_change >= 0 else 'negative'}" style="margin: 0; font-size: 12px;">
+                                {price_change:+.2f} ({price_change_pct:+.2f}%)
+                            </p>
+                        </div>
+                        <div>
+                            <p style="color: var(--text-secondary); margin: 0; font-size: 11px;">RECOMMENDATION</p>
+                            <p style="font-size: 20px; margin: 4px 0;">{signal}</p>
+                            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">Score: {score}/100</p>
+                        </div>
+                    </div>
+                    
+                    <hr style="border-color: var(--border-color); margin: 20px 0;">
+                    
+                    <h5 style="margin-bottom: 12px;">Technical Indicators</h5>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            RSI: <strong class="{'positive' if details['rsi'] < 50 else 'negative'}">{details['rsi']:.1f}</strong>
+                        </span>
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            EMA 20: <strong>${df['EMA_20'].iloc[-1]:.2f}</strong>
+                        </span>
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            EMA 50: <strong>${df['EMA_50'].iloc[-1]:.2f}</strong>
+                        </span>
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            MACD: <strong class="{'positive' if details['macd_bullish'] else 'negative'}">{'+' if df['MACD'].iloc[-1] >= 0 else ''}{df['MACD'].iloc[-1]:.4f}</strong>
+                        </span>
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            BB Upper: <strong>${df['BB_Upper'].iloc[-1]:.2f}</strong>
+                        </span>
+                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                            BB Lower: <strong>${df['BB_Lower'].iloc[-1]:.2f}</strong>
+                        </span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         
-        with col_s1:
-            st.markdown("#### Risk Management")
-            max_position = st.slider("Max Position Size (%)", 5, 50, 20)
-            stop_loss = st.slider("Default Stop Loss (%)", 1, 10, 2)
-            take_profit = st.slider("Default Take Profit (%)", 3, 20, 5)
+        with col_ai2:
+            st.markdown("### 📊 Prediction Engine")
+            
+            st.info("🔮 AI price prediction coming soon with XGBoost ML model integration!")
+            
+            st.markdown("""
+            <div class="portfolio-card" style="margin-top: 16px;">
+                <h5 style="margin-bottom: 12px;">Strategy Logic</h5>
+                <ol style="color: var(--text-secondary); font-size: 13px; line-height: 1.8;">
+                    <li>RSI < 30 indicates <span style="color: var(--accent-green);">oversold</span> → potential BUY</li>
+                    <li>RSI > 70 indicates <span style="color: var(--accent-red);">overbought</span> → potential SELL</li>
+                    <li>EMA 20 crossing above EMA 50 → <span style="color: var(--accent-green);">Bullish</span> signal</li>
+                    <li>EMA 20 crossing below EMA 50 → <span style="color: var(--accent-red);">Bearish</span> signal</li>
+                    <li>MACD histogram positive → <span style="color: var(--accent-green);">Momentum building</span></li>
+                </ol>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with tab3:
+        # Trade Execution Form
+        col_t1, col_t2 = st.columns([1, 2])
         
-        with col_s2:
-            st.markdown("#### Notifications")
-            email_alerts = st.checkbox("Email Alerts", value=False)
-            push_alerts = st.checkbox("Push Notifications", value=True)
-            sound_alerts = st.checkbox("Sound Alerts", value=False)
+        with col_t1:
+            st.markdown("### 💹 Execute Trade")
+            
+            with st.form("trade_form"):
+                trade_type = st.radio("Trade Type", ["BUY", "SELL"], horizontal=True)
+                quantity = st.number_input("Quantity", min_value=1, value=10, step=1, key="qty")
+                order_type = st.selectbox("Order Type", ["MARKET", "LIMIT"])
+                
+                if order_type == "LIMIT":
+                    limit_price = st.number_input("Limit Price", value=float(latest_price), format="%.2f")
+                else:
+                    limit_price = latest_price
+                
+                if st.form_submit_button("📊 Execute Trade", use_container_width=True):
+                    total_cost = limit_price * quantity
+                    
+                    if trade_type == "BUY":
+                        if total_cost <= st.session_state.virtual_balance:
+                            st.session_state.virtual_balance -= total_cost
+                            st.session_state.open_positions.append({
+                                'symbol': symbol,
+                                'quantity': quantity,
+                                'entry_price': limit_price,
+                                'current_price': limit_price,
+                                'type': 'LONG',
+                                'timestamp': datetime.now()
+                            })
+                            st.success(f"✅ BUY order executed: {quantity} {symbol} @ ${limit_price:.2f}")
+                        else:
+                            st.error("❌ Insufficient funds!")
+                    else:
+                        # Sell from existing position or short
+                        if any(p['symbol'] == symbol for p in st.session_state.open_positions):
+                            for pos in st.session_state.open_positions:
+                                if pos['symbol'] == symbol and pos['quantity'] >= quantity:
+                                    pnl = (limit_price - pos['entry_price']) * quantity
+                                    st.session_state.virtual_balance += (pos['entry_price'] * quantity) + pnl
+                                    st.session_state.trade_history.append({
+                                        'symbol': symbol,
+                                        'type': 'SELL',
+                                        'quantity': quantity,
+                                        'entry': pos['entry_price'],
+                                        'exit': limit_price,
+                                        'pnl': pnl,
+                                        'timestamp': datetime.now()
+                                    })
+                                    pos['quantity'] -= quantity
+                                    if pos['quantity'] <= 0:
+                                        st.session_state.open_positions.remove(pos)
+                                    st.success(f"✅ SELL order executed: {quantity} {symbol} @ ${limit_price:.2f}")
+                                    break
+                        else:
+                            # Short selling
+                            st.session_state.open_positions.append({
+                                'symbol': symbol,
+                                'quantity': -quantity,
+                                'entry_price': limit_price,
+                                'current_price': limit_price,
+                                'type': 'SHORT',
+                                'timestamp': datetime.now()
+                            })
+                            st.session_state.trade_history.append({
+                                'symbol': symbol,
+                                'type': 'SHORT SELL',
+                                'quantity': quantity,
+                                'entry': limit_price,
+                                'exit': None,
+                                'pnl': 0,
+                                'timestamp': datetime.now()
+                            })
+                            st.success(f"✅ SHORT order executed: {quantity} {symbol} @ ${limit_price:.2f}")
         
-        if st.button("💾 Save Settings"):
-            st.success("Settings saved successfully!")
+        with col_t2:
+            # Open Positions
+            st.markdown("### 📁 Open Positions")
+            
+            if st.session_state.open_positions:
+                positions_df = pd.DataFrame(st.session_state.open_positions)
+                positions_df['current_value'] = positions_df['current_price'] * positions_df['quantity']
+                positions_df['unrealized_pnl'] = (positions_df['current_price'] - positions_df['entry_price']) * positions_df['quantity']
+                positions_df['pnl_pct'] = ((positions_df['current_price'] - positions_df['entry_price']) / positions_df['entry_price'] * 100)
+                
+                # Format for display
+                display_df = pd.DataFrame({
+                    'Symbol': positions_df['symbol'],
+                    'Qty': positions_df['quantity'],
+                    'Entry': positions_df['entry_price'].apply(lambda x: f"${x:.2f}"),
+                    'Current': positions_df['current_price'].apply(lambda x: f"${x:.2f}"),
+                    'P&L': positions_df['unrealized_pnl'].apply(lambda x: f"${x:.2f}"),
+                    'P&L %': positions_df['pnl_pct'].apply(lambda x: f"{x:.2f}%")
+                })
+                
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("No open positions. Execute a trade to get started!")
+            
+            st.markdown("---")
+            
+            # Trade History
+            st.markdown("### 📜 Trade History")
+            
+            if st.session_state.trade_history:
+                history_df = pd.DataFrame(st.session_state.trade_history)
+                
+                display_hist = pd.DataFrame({
+                    'Time': pd.to_datetime(history_df['timestamp']).dt.strftime('%Y-%m-%d %H:%M'),
+                    'Symbol': history_df['symbol'],
+                    'Type': history_df['type'],
+                    'Qty': history_df['quantity'],
+                    'Entry': history_df['entry'].apply(lambda x: f"${x:.2f}" if x else '-'),
+                    'Exit': history_df['exit'].apply(lambda x: f"${x:.2f}" if x else '-'),
+                    'P&L': history_df['pnl'].apply(lambda x: f"${x:.2f}")
+                })
+                
+                st.dataframe(display_hist, use_container_width=True, hide_index=True)
+            else:
+                st.info("No trade history yet.")
 
 
 if __name__ == "__main__":
