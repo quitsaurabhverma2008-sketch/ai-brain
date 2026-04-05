@@ -317,7 +317,7 @@ st.markdown("""
         margin: 4px 0;
     }
 </style>
-""", unsafe_allow_html=True)
+""")
 
 
 # ============================================================================
@@ -649,7 +649,7 @@ def main():
             </span>
         </div>
     </div>
-    """.format(datetime.now().strftime("%Y-%m-%d %H:%M")), unsafe_allow_html=True)
+    """.format(datetime.now().strftime("%Y-%m-%d %H:%M")))
     
     # Sidebar
     with st.sidebar:
@@ -667,19 +667,19 @@ def main():
             change_class = "positive" if change >= 0 else "negative"
             change_sign = "+" if change >= 0 else ""
             
-            st.markdown(f"""
-            <div class="glass-card" style="padding: 14px 16px; margin-bottom: 10px;">
+            st.html(f"""
+            <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="color: var(--text-secondary); font-size: 11px; font-weight: 600;">{name}</span>
-                    <span class="{change_class}" style="font-size: 10px; font-family: 'JetBrains Mono';">
+                    <span style="color: #8b949e; font-size: 11px; font-weight: 600;">{name}</span>
+                    <span style="font-size: 10px; font-family: 'JetBrains Mono'; color: {'#00d68f' if change >= 0 else '#ff3d71'};">
                         {change_sign}{change:.2f}%
                     </span>
                 </div>
-                <div style="font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; color: var(--text-primary); margin-top: 4px;">
+                <div style="font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; color: #ffffff; margin-top: 4px;">
                     {price:,.2f}
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """)
         
         st.markdown("---")
         
@@ -688,16 +688,19 @@ def main():
         
         news_items = get_market_news()
         for headline, sentiment in news_items[:5]:
-            badge_class = f"badge-{sentiment.lower()}"
+            badge_color = '#00d68f' if sentiment == 'Bullish' else '#ff3d71' if sentiment == 'Bearish' else '#8b949e'
+            badge_bg = 'rgba(0, 214, 143, 0.2)' if sentiment == 'Bullish' else 'rgba(255, 61, 113, 0.2)' if sentiment == 'Bearish' else 'rgba(139, 148, 158, 0.2)'
             
-            st.markdown(f"""
-            <div class="news-item">
-                <span class="news-badge {badge_class}">{sentiment}</span>
-                <p style="margin: 8px 0 0 0; font-size: 12px; color: var(--text-primary); line-height: 1.4;">
+            st.html(f"""
+            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; background: {badge_bg}; color: {badge_color};">
+                    {sentiment}
+                </span>
+                <p style="margin: 8px 0 0 0; font-size: 12px; color: #ffffff; line-height: 1.4;">
                     {headline}
                 </p>
             </div>
-            """, unsafe_allow_html=True)
+            """)
     
     # Symbol Selection
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -737,47 +740,55 @@ def main():
     
     col_p1, col_p2, col_p3, col_p4, col_p5 = st.columns(5)
     
+    unreal_cls = "positive" if metrics['unrealized_pnl'] >= 0 else "negative"
+    real_cls = "positive" if metrics['realized_pnl'] >= 0 else "negative"
+    unreal_color = '#00d68f' if metrics['unrealized_pnl'] >= 0 else '#ff3d71'
+    real_color = '#00d68f' if metrics['realized_pnl'] >= 0 else '#ff3d71'
+    
     with col_p1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Total Equity</div>
-            <div class="metric-value">${metrics['total_equity']:,.0f}</div>
+        st.html(f"""
+        <div style="background: linear-gradient(145deg, rgba(22, 27, 34, 0.9) 0%, rgba(16, 22, 28, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px 20px; height: 100%; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0095ff, #00d68f);"></div>
+            <div style="font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Total Equity</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.2;">${metrics['total_equity']:,.0f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col_p2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Cash Balance</div>
-            <div class="metric-value">${metrics['cash']:,.0f}</div>
+        st.html(f"""
+        <div style="background: linear-gradient(145deg, rgba(22, 27, 34, 0.9) 0%, rgba(16, 22, 28, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px 20px; height: 100%; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0095ff, #00d68f);"></div>
+            <div style="font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Cash Balance</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.2;">${metrics['cash']:,.0f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col_p3:
-        unreal_cls = "positive" if metrics['unrealized_pnl'] >= 0 else "negative"
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Unrealized P&L</div>
-            <div class="metric-value {unreal_cls}">${metrics['unrealized_pnl']:,.0f}</div>
+        st.html(f"""
+        <div style="background: linear-gradient(145deg, rgba(22, 27, 34, 0.9) 0%, rgba(16, 22, 28, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px 20px; height: 100%; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0095ff, #00d68f);"></div>
+            <div style="font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Unrealized P&L</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: {unreal_color}; line-height: 1.2;">${metrics['unrealized_pnl']:,.0f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col_p4:
-        real_cls = "positive" if metrics['realized_pnl'] >= 0 else "negative"
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Realized P&L</div>
-            <div class="metric-value {real_cls}">${metrics['realized_pnl']:,.0f}</div>
+        st.html(f"""
+        <div style="background: linear-gradient(145deg, rgba(22, 27, 34, 0.9) 0%, rgba(16, 22, 28, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px 20px; height: 100%; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0095ff, #00d68f);"></div>
+            <div style="font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Realized P&L</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: {real_color}; line-height: 1.2;">${metrics['realized_pnl']:,.0f}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     with col_p5:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-label">Open Positions</div>
-            <div class="metric-value">{len(st.session_state.open_positions)}</div>
+        st.html(f"""
+        <div style="background: linear-gradient(145deg, rgba(22, 27, 34, 0.9) 0%, rgba(16, 22, 28, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px 20px; height: 100%; position: relative; overflow: hidden;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0095ff, #00d68f);"></div>
+            <div style="font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Open Positions</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.2;">{len(st.session_state.open_positions)}</div>
         </div>
-        """, unsafe_allow_html=True)
+        """)
     
     st.markdown("---")
     
@@ -800,50 +811,42 @@ def main():
             with col_t2:
                 st.markdown("### 🤖 AI Signal")
                 
-                signal_cls = f"signal-{signal.lower()}"
-                st.markdown(f'<div class="signal-badge {signal_cls}">{signal}</div>', unsafe_allow_html=True)
+                signal_color = '#00d68f' if signal == 'BUY' else '#ff3d71' if signal == 'SELL' else '#8b949e'
+                signal_bg = 'rgba(0, 214, 143, 0.2)' if signal == 'BUY' else 'rgba(255, 61, 113, 0.2)' if signal == 'SELL' else 'rgba(139, 148, 158, 0.2)'
+                rsi_color = '#00d68f' if details.get('rsi', 50) < 50 else '#ff3d71'
+                trend_color = '#00d68f' if details.get('trend') == 'UPTREND' else '#ff3d71'
+                macd_color = '#00d68f' if details.get('macd_bullish') else '#ff3d71'
+                ema_color = '#00d68f' if details.get('ema_cross') == 'above' else '#ff3d71'
                 
-                st.markdown(f"""
-                <div class="glass-card" style="margin-top: 16px;">
-                    <div style="text-align: center;">
-                        <div style="font-family: 'JetBrains Mono'; font-size: 32px; font-weight: 700; color: var(--text-primary);">
-                            {score}/100
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">
-                            Confidence Score
-                        </div>
-                    </div>
+                st.html(f"""
+                <div style="background: {signal_bg}; border: 2px solid {signal_color}; border-radius: 10px; padding: 12px 24px; text-align: center; margin: 16px 0;">
+                    <span style="font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; color: {signal_color}; letter-spacing: 2px;">
+                        {signal}
+                    </span>
                 </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown(f"""
-                <div class="glass-card" style="margin-top: 12px; padding: 14px;">
+                <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 12px; padding: 20px; text-align: center;">
+                    <div style="font-family: 'JetBrains Mono'; font-size: 32px; font-weight: 700; color: #ffffff;">{score}/100</div>
+                    <div style="color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Confidence Score</div>
+                </div>
+                <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 12px; padding: 14px; margin-top: 12px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary); font-size: 12px;">RSI (14)</span>
-                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {'var(--accent-green)' if details.get('rsi', 50) < 50 else 'var(--accent-red)'};">
-                            {details.get('rsi', 0):.1f}
-                        </span>
+                        <span style="color: #8b949e; font-size: 12px;">RSI (14)</span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {rsi_color};">{details.get('rsi', 0):.1f}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary); font-size: 12px;">Trend</span>
-                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {'var(--accent-green)' if details.get('trend') == 'UPTREND' else 'var(--accent-red)'};">
-                            {details.get('trend', 'N/A')}
-                        </span>
+                        <span style="color: #8b949e; font-size: 12px;">Trend</span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {trend_color};">{details.get('trend', 'N/A')}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary); font-size: 12px;">MACD</span>
-                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {'var(--accent-green)' if details.get('macd_bullish') else 'var(--accent-red)'};">
-                            {"BULLISH" if details.get('macd_bullish') else "BEARISH"}
-                        </span>
+                        <span style="color: #8b949e; font-size: 12px;">MACD</span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {macd_color};">{'BULLISH' if details.get('macd_bullish') else 'BEARISH'}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-secondary); font-size: 12px;">EMA Cross</span>
-                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {'var(--accent-green)' if details.get('ema_cross') == 'above' else 'var(--accent-red)'};">
-                            {details.get('ema_cross', 'N/A').upper()}
-                        </span>
+                        <span style="color: #8b949e; font-size: 12px;">EMA Cross</span>
+                        <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: {ema_color};">{details.get('ema_cross', 'N/A').upper()}</span>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """)
         else:
             st.warning("No data available for this symbol.")
     
@@ -854,110 +857,119 @@ def main():
             st.markdown("### 📊 Technical Analysis")
             
             if not df.empty:
-                # Current stats
-                st.markdown(f"""
-                <div class="glass-card">
-                    <h4 style="margin-top: 0; color: var(--text-primary);">{symbol} Analysis</h4>
+                price_change_color = '#00d68f' if price_change >= 0 else '#ff3d71'
+                period_change_color = '#00d68f' if period_change >= 0 else '#ff3d71'
+                rsi_color = '#00d68f' if details.get('rsi', 50) < 50 else '#ff3d71'
+                macd_color = '#00d68f' if details.get('macd_bullish') else '#ff3d71'
+                
+                st.html(f"""
+                <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 16px; padding: 20px;">
+                    <h4 style="margin-top: 0; color: #ffffff;">{symbol} Analysis</h4>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
                         <div>
-                            <div style="color: var(--text-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                            <div style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
                                 Current Price
                             </div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 28px; font-weight: 700; color: var(--text-primary);">
+                            <div style="font-family: 'JetBrains Mono'; font-size: 28px; font-weight: 700; color: #ffffff;">
                                 ${latest_price:.2f}
                             </div>
-                            <div class="{'positive' if price_change >= 0 else 'negative'}" style="font-family: 'JetBrains Mono'; font-size: 12px;">
+                            <div style="font-family: 'JetBrains Mono'; font-size: 12px; color: {price_change_color};">
                                 {price_change:+.2f} ({price_change_pct:+.2f}%)
                             </div>
                         </div>
                         <div>
-                            <div style="color: var(--text-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                            <div style="color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">
                                 {period.upper()} Change
                             </div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 28px; font-weight: 700; color: {'var(--accent-green)' if period_change >= 0 else 'var(--accent-red)'};">
+                            <div style="font-family: 'JetBrains Mono'; font-size: 28px; font-weight: 700; color: {period_change_color};">
                                 {period_change:+.2f}%
                             </div>
-                            <div style="color: var(--text-secondary); font-size: 12px;">
+                            <div style="color: #8b949e; font-size: 12px;">
                                 ${period_change:+.2f}
                             </div>
                         </div>
                     </div>
                     
-                    <hr style="border-color: var(--border-color); margin: 20px 0;">
+                    <hr style="border-color: #30363d; margin: 20px 0;">
                     
-                    <h5 style="color: var(--text-primary); margin-bottom: 12px;">Technical Indicators</h5>
+                    <h5 style="color: #ffffff; margin-bottom: 12px;">Technical Indicators</h5>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">RSI (14)</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: {'var(--accent-green)' if details.get('rsi', 50) < 50 else 'var(--accent-red)'};">
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">RSI (14)</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: {rsi_color};">
                                 {details.get('rsi', 0):.1f}
                             </div>
                         </div>
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">MACD</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: {'var(--accent-green)' if details.get('macd_bullish') else 'var(--accent-red)'};">
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">MACD</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: {macd_color};">
                                 {df['MACD'].iloc[-1]:+.4f}
                             </div>
                         </div>
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">EMA 20</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px;">${df['EMA_20'].iloc[-1]:.2f}</div>
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">EMA 20</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: #ffffff;">${df['EMA_20'].iloc[-1]:.2f}</div>
                         </div>
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">EMA 50</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px;">${df['EMA_50'].iloc[-1]:.2f}</div>
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">EMA 50</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: #ffffff;">${df['EMA_50'].iloc[-1]:.2f}</div>
                         </div>
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">BB Upper</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px;">${df['BB_Upper'].iloc[-1]:.2f}</div>
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">BB Upper</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: #ffffff;">${df['BB_Upper'].iloc[-1]:.2f}</div>
                         </div>
-                        <div class="glass-card" style="padding: 12px;">
-                            <div style="color: var(--text-secondary); font-size: 10px;">BB Lower</div>
-                            <div style="font-family: 'JetBrains Mono'; font-size: 18px;">${df['BB_Lower'].iloc[-1]:.2f}</div>
+                        <div style="background: rgba(22, 27, 34, 0.8); border: 1px solid #30363d; border-radius: 12px; padding: 12px;">
+                            <div style="color: #8b949e; font-size: 10px;">BB Lower</div>
+                            <div style="font-family: 'JetBrains Mono'; font-size: 18px; color: #ffffff;">${df['BB_Lower'].iloc[-1]:.2f}</div>
                         </div>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """)
         
         with col_s2:
             st.markdown("### 🎯 Trading Strategy")
             
-            st.markdown(f"""
-            <div class="glass-card">
-                <h4 style="margin-top: 0; color: var(--text-primary);">AI Recommendation</h4>
+            sig_color = '#00d68f' if signal == 'BUY' else '#ff3d71' if signal == 'SELL' else '#ffaa00'
+            sig_bg = 'rgba(0, 214, 143, 0.2)' if signal == 'BUY' else 'rgba(255, 61, 113, 0.2)' if signal == 'SELL' else 'rgba(255, 170, 0, 0.2)'
+            
+            st.html(f"""
+            <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 16px; padding: 20px;">
+                <h4 style="margin-top: 0; color: #ffffff;">AI Recommendation</h4>
                 
                 <div style="text-align: center; margin: 20px 0;">
-                    <span class="signal-badge signal-{signal.lower()}">{signal}</span>
+                    <span style="display: inline-flex; align-items: center; justify-content: center; padding: 12px 24px; border-radius: 10px; font-family: 'JetBrains Mono'; font-weight: 700; font-size: 16px; letter-spacing: 2px; min-width: 120px; background: {sig_bg}; border: 2px solid {sig_color}; color: {sig_color}; box-shadow: 0 0 30px {sig_bg};">
+                        {signal}
+                    </span>
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: center;">
                     <div>
-                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'var(--accent-green)' if signal == 'BUY' else 'var(--text-secondary)'};">BUY</div>
-                        <div style="font-size: 10px; color: var(--text-secondary);">RSI &lt; 40</div>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'#00d68f' if signal == 'BUY' else '#8b949e'};">BUY</div>
+                        <div style="font-size: 10px; color: #8b949e;">RSI &lt; 40</div>
                     </div>
                     <div>
-                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'var(--accent-red)' if signal == 'SELL' else 'var(--text-secondary)'};">SELL</div>
-                        <div style="font-size: 10px; color: var(--text-secondary);">RSI &gt; 60</div>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'#ff3d71' if signal == 'SELL' else '#8b949e'};">SELL</div>
+                        <div style="font-size: 10px; color: #8b949e;">RSI &gt; 60</div>
                     </div>
                     <div>
-                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'var(--accent-gold)' if signal == 'HOLD' else 'var(--text-secondary)'};">HOLD</div>
-                        <div style="font-size: 10px; color: var(--text-secondary);">Neutral</div>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 20px; font-weight: 700; color: {'#ffaa00' if signal == 'HOLD' else '#8b949e'};">HOLD</div>
+                        <div style="font-size: 10px; color: #8b949e;">Neutral</div>
                     </div>
                 </div>
                 
-                <hr style="border-color: var(--border-color); margin: 20px 0;">
+                <hr style="border-color: #30363d; margin: 20px 0;">
                 
-                <h5 style="color: var(--text-primary); margin-bottom: 12px;">Strategy Logic</h5>
-                <ol style="color: var(--text-secondary); font-size: 12px; line-height: 1.8; padding-left: 18px;">
-                    <li>RSI &lt; 30 indicates <span style="color: var(--accent-green);">oversold</span> → BUY signal</li>
-                    <li>RSI &gt; 70 indicates <span style="color: var(--accent-red);">overbought</span> → SELL signal</li>
-                    <li>EMA 20 &gt; EMA 50 → <span style="color: var(--accent-green);">Bullish</span> momentum</li>
-                    <li>MACD crosses above signal → <span style="color: var(--accent-green);">Bullish</span> crossover</li>
-                    <li>Price near BB Lower → <span style="color: var(--accent-green);">Support</span> zone</li>
+                <h5 style="color: #ffffff; margin-bottom: 12px;">Strategy Logic</h5>
+                <ol style="color: #8b949e; font-size: 12px; line-height: 1.8; padding-left: 18px;">
+                    <li>RSI &lt; 30 indicates <span style="color: #00d68f;">oversold</span> → BUY signal</li>
+                    <li>RSI &gt; 70 indicates <span style="color: #ff3d71;">overbought</span> → SELL signal</li>
+                    <li>EMA 20 &gt; EMA 50 → <span style="color: #00d68f;">Bullish</span> momentum</li>
+                    <li>MACD crosses above signal → <span style="color: #00d68f;">Bullish</span> crossover</li>
+                    <li>Price near BB Lower → <span style="color: #00d68f;">Support</span> zone</li>
                 </ol>
             </div>
-            """, unsafe_allow_html=True)
+            """)
     
     with tab3:
         col_t1, col_t2 = st.columns([1, 2])
@@ -976,34 +988,35 @@ def main():
                     limit_price = latest_price
                 
                 total_cost = limit_price * quantity
+                cost_color = '#ff3d71' if trade_type == 'BUY' else '#00d68f'
                 
-                st.markdown(f"""
-                <div class="glass-card" style="margin: 16px 0;">
+                st.html(f"""
+                <div style="background: rgba(22, 27, 34, 0.8); backdrop-filter: blur(12px); border: 1px solid #30363d; border-radius: 12px; padding: 16px; margin: 16px 0;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary);">Symbol</span>
-                        <span style="font-family: 'JetBrains Mono';">{symbol}</span>
+                        <span style="color: #8b949e;">Symbol</span>
+                        <span style="font-family: 'JetBrains Mono'; color: #ffffff;">{symbol}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary);">Price</span>
-                        <span style="font-family: 'JetBrains Mono';">${limit_price:.2f}</span>
+                        <span style="color: #8b949e;">Price</span>
+                        <span style="font-family: 'JetBrains Mono'; color: #ffffff;">${limit_price:.2f}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <span style="color: var(--text-secondary);">Quantity</span>
-                        <span style="font-family: 'JetBrains Mono';">{quantity}</span>
+                        <span style="color: #8b949e;">Quantity</span>
+                        <span style="font-family: 'JetBrains Mono'; color: #ffffff;">{quantity}</span>
                     </div>
-                    <hr style="border-color: var(--border-color);">
+                    <hr style="border-color: #30363d;">
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: var(--text-primary); font-weight: 600;">Total Cost</span>
-                        <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: {'var(--accent-red)' if trade_type == 'BUY' else 'var(--accent-green)'};">
+                        <span style="color: #ffffff; font-weight: 600;">Total Cost</span>
+                        <span style="font-family: 'JetBrains Mono'; font-weight: 700; color: {cost_color};">
                             ${total_cost:,.2f}
                         </span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-top: 8px;">
-                        <span style="color: var(--text-secondary);">Available Cash</span>
-                        <span style="font-family: 'JetBrains Mono';">${st.session_state.virtual_balance:,.2f}</span>
+                        <span style="color: #8b949e;">Available Cash</span>
+                        <span style="font-family: 'JetBrains Mono'; color: #ffffff;">${st.session_state.virtual_balance:,.2f}</span>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """)
                 
                 if st.form_submit_button("📊 Execute Trade", use_container_width=True):
                     if trade_type == "BUY":
