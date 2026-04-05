@@ -906,20 +906,21 @@ def main():
                 latest['Close']
             )
             
+            timestamp = datetime.now().strftime("%H:%M:%S")
             st.markdown(f"""
             <div class="ai-insight">
                 <div class="ai-insight-header">
                     <span style="font-size: 24px;">🤖</span>
                     <span style="font-weight: 600; font-size: 16px;">AI Analysis Engine</span>
                     <span style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">
-                        Generated at {} EST
+                        Generated at {timestamp} EST
                     </span>
                 </div>
                 <div class="ai-insight-content">
                     {insight}
                 </div>
             </div>
-            """.format(datetime.now().strftime("%H:%M:%S")), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         
         st.markdown("---")
         
