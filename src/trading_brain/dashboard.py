@@ -666,7 +666,6 @@ def create_candlestick_chart(df: pd.DataFrame, symbol: str) -> go.Figure:
     
     # Update layout
     fig.update_layout(
-        template='plotly_dark',
         height=700,
         xaxis_rangeslider_visible=False,
         showlegend=True,
@@ -720,10 +719,10 @@ def create_sentiment_gauge(bullish_score: int) -> go.Figure:
     ))
     
     fig.update_layout(
-        template='plotly_dark',
         height=200,
-        paper_bgcolor='transparent',
-        plot_bgcolor='transparent',
+        paper_bgcolor='#0a0e17',
+        plot_bgcolor='#0a0e17',
+        font=dict(color='#ffffff'),
         showlegend=False,
         margin=dict(t=20, b=20, l=20, r=20)
     )
