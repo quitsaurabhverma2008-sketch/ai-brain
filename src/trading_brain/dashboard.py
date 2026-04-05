@@ -601,19 +601,12 @@ def run_backtest(df: pd.DataFrame, initial_capital: float,
                  start_date: datetime, end_date: datetime) -> dict:
     """Run backtest on historical data"""
     
-    # Make dates timezone-naive for comparison
-    df_index = df.index
-    if df_index.tz is not None:
-        df_index = df_index.tz_localize(None)
-        df_temp = df.copy()
-        df_temp.index = df_index
-    else:
-        df_temp = df
+    # Convert to timestamps for comparison
+    df_index = pd.DatetimeIndex(df.index)
+    start_ts = pd.Timestamp(start_date)
+    end_ts = pd.Timestamp(end_date) + pd.Timedelta(days=1)
     
-    start_dt = datetime.combine(start_date, datetime.min.time())
-    end_dt = datetime.combine(end_date, datetime.max.time())
-    
-    df_test = df_temp[(df_index >= start_dt) & (df_index <= end_dt)].copy()
+    df_test = df[(df_index >= start_ts) & (df_index < end_ts)].copy()
     
     if len(df_test) < 50:
         return {'error': 'Insufficient data for backtest'}
