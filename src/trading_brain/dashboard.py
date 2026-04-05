@@ -931,23 +931,19 @@ def main():
                 st.markdown("---")
                 
                 if details:
-                    st.markdown("""
+                    rsi_cls = "positive" if details['rsi'] < 50 else "negative"
+                    trend_cls = "positive" if details['trend'] == 'UPTREND' else "negative"
+                    ema_cls = "positive" if details['ema_cross'] == 'above' else "negative"
+                    macd_cls = "positive" if details['macd_bullish'] else "negative"
+                    
+                    st.markdown(f"""
                     <div style="font-size: 13px;">
-                        <p><strong>RSI (14):</strong> <span class="{}"> {:.1f}</span></p>
-                        <p><strong>Trend:</strong> <span class="{}">{}</span></p>
-                        <p><strong>EMA:</strong> <span class="{}">{} EMA</span></p>
-                        <p><strong>MACD:</strong> <span class="{}">{}</span></p>
+                        <p><strong>RSI (14):</strong> <span class="{rsi_cls}"> {details['rsi']:.1f}</span></p>
+                        <p><strong>Trend:</strong> <span class="{trend_cls}">{details['trend']}</span></p>
+                        <p><strong>EMA:</strong> <span class="{ema_cls}">{details['ema_cross'].upper()} EMA</span></p>
+                        <p><strong>MACD:</strong> <span class="{macd_cls}">{"BULLISH" if details['macd_bullish'] else "BEARISH"}</span></p>
                     </div>
-                    """.format(
-                        "positive" if details['rsi'] < 50 else "negative",
-                        details['rsi'],
-                        "positive" if details['trend'] == 'UPTREND' else "negative",
-                        details['trend'],
-                        "positive" if details['ema_cross'] == 'above' else "negative",
-                        details['ema_cross'].upper(),
-                        "positive" if details['macd_bullish'] else "negative",
-                        "BULLISH" if details['macd_bullish'] else "BEARISH"
-                    ), unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
         else:
             st.warning("No data available for the selected symbol. Please try another.")
     
@@ -958,7 +954,13 @@ def main():
             st.markdown("### 🧠 AI Trading Strategy")
             
             if details:
-                st.markdown(f"""
+                # Pre-compute values for HTML
+                price_change_class = "positive" if price_change >= 0 else "negative"
+                rsi_class = "positive" if details['rsi'] < 50 else "negative"
+                macd_class = "positive" if details['macd_bullish'] else "negative"
+                macd_sign = "+" if df['MACD'].iloc[-1] >= 0 else ""
+                
+                html_content = f"""
                 <div class="portfolio-card">
                     <h4 style="margin-top: 0;">Signal Analysis for {symbol}</h4>
                     <hr style="border-color: var(--border-color);">
@@ -967,7 +969,7 @@ def main():
                         <div>
                             <p style="color: var(--text-secondary); margin: 0; font-size: 11px;">CURRENT PRICE</p>
                             <p style="font-family: 'JetBrains Mono'; font-size: 24px; margin: 4px 0;">${latest_price:.2f}</p>
-                            <p class="{'positive' if price_change >= 0 else 'negative'}" style="margin: 0; font-size: 12px;">
+                            <p class="{price_change_class}" style="margin: 0; font-size: 12px;">
                                 {price_change:+.2f} ({price_change_pct:+.2f}%)
                             </p>
                         </div>
@@ -983,7 +985,7 @@ def main():
                     <h5 style="margin-bottom: 12px;">Technical Indicators</h5>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
                         <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
-                            RSI: <strong class="{'positive' if details['rsi'] < 50 else 'negative'}">{details['rsi']:.1f}</strong>
+                            RSI: <strong class="{rsi_class}">{details['rsi']:.1f}</strong>
                         </span>
                         <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
                             EMA 20: <strong>${df['EMA_20'].iloc[-1]:.2f}</strong>
@@ -992,7 +994,7 @@ def main():
                             EMA 50: <strong>${df['EMA_50'].iloc[-1]:.2f}</strong>
                         </span>
                         <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
-                            MACD: <strong class="{'positive' if details['macd_bullish'] else 'negative'}">{'+' if df['MACD'].iloc[-1] >= 0 else ''}{df['MACD'].iloc[-1]:.4f}</strong>
+                            MACD: <strong class="{macd_class}">{macd_sign}{df['MACD'].iloc[-1]:.4f}</strong>
                         </span>
                         <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
                             BB Upper: <strong>${df['BB_Upper'].iloc[-1]:.2f}</strong>
@@ -1002,7 +1004,8 @@ def main():
                         </span>
                     </div>
                 </div>
-                """, unsafe_allow_html=True)
+                """
+                st.markdown(html_content, unsafe_allow_html=True)
         
         with col_ai2:
             st.markdown("### 📊 Prediction Engine")
