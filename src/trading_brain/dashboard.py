@@ -959,7 +959,7 @@ def main():
                 return ''
             
             st.dataframe(
-                df_signals.style.applymap(color_signal, subset=['Signal']),
+                df_signals.style.map(color_signal, subset=['Signal']),
                 use_container_width=True,
                 hide_index=True
             )
