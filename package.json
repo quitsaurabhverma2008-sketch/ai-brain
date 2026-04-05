@@ -1,0 +1,11 @@
+{
+  "name": "ai-brain",
+  "version": "1.0.0",
+  "private": true,
+  "homepage": "https://github.com/quitsaurabhverma2008-sketch/ai-brain",
+  "scripts": {
+    "install-deps": "pip install -r requirements.txt",
+    "start": "cd src/trading_brain && streamlit run dashboard.py --server.port 8514"
+  },
+  "dependencies": {}
+}

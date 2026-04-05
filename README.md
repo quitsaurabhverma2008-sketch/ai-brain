@@ -1,51 +1,105 @@
-# 🧠 AI Brain - Intelligent Trading System
+# 🧠 AI Brain Pro - Professional Trading Dashboard
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-3.0-blue)
 ![Python](https://img.shields.io/badge/python-3.8+-green)
 ![Streamlit](https://img.shields.io/badge/streamlit-1.28+-red)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-AI-powered stock trading system with real-time signals, price predictions, and paper trading.
+A Bloomberg-style professional trading dashboard with AI-powered analysis, real-time signals, and comprehensive backtesting capabilities.
 
 ## ✨ Features
 
-- **📊 Live Dashboard** - Real-time AI trading signals for 200+ markets
-- **🔮 Price Prediction** - AI-powered future price predictions with confidence bands
-- **🎯 Paper Trading** - Practice trading with $100k virtual capital
-- **🤖 ML Model** - XGBoost classifier trained on 37,000+ samples
-- **📈 Technical Indicators** - RSI, MACD, SMA, Bollinger Bands, Stochastic, ADX, CCI, ATR, VWAP
+### 🎨 Professional UI
+- **Bloomberg Terminal Style** - Dark mode aesthetic with glassmorphism design
+- **Real-time KPI Cards** - Portfolio value, P&L, Win Rate with color-coded indicators
+- **Interactive Charts** - Plotly-powered candlestick charts with SMA overlays
 
-## 🚀 Getting Started
+### 📊 Dashboard
+- Live trading signals for 20+ major markets
+- Technical analysis with RSI, MACD, Bollinger Bands
+- AI-generated strategy insights
+
+### 🔮 AI Prediction
+- Price predictions with confidence bands
+- Mean reversion logic
+- Volatility-adjusted forecasting
+
+### 📈 Backtesting
+- Historical strategy performance
+- Equity curve visualization
+- Trade-by-trade analysis
+- Win rate and profit factor metrics
+
+### 💹 Paper Trading
+- $100k virtual capital
+- Open positions tracking
+- Trade history with P&L
+
+## 🚀 Quick Start
 
 ```bash
-# Install dependencies
-pip install streamlit pandas numpy plotly yfinance xgboost scikit-learn
+# Clone the repository
+git clone https://github.com/quitsaurabhverma2008-sketch/ai-brain.git
+cd ai-brain
 
-# Run the app
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
 cd src/trading_brain
-streamlit run dashboard.py --server.port 8514
+streamlit run app.py --server.port 8514
 ```
 
-## 🌐 Live Demo
+Visit: **http://localhost:8514**
 
-Visit: http://localhost:8514
+## 📁 Project Structure
 
-## 📱 Pages
-
-1. **Dashboard** - Live signals with technical analysis charts
-2. **Prediction** - AI price predictions with future candles
-3. **Trade Now** - Paper trading simulation
+```
+ai-brain/
+├── src/
+│   └── trading_brain/
+│       ├── app.py              # Main Pro Dashboard
+│       ├── dashboard.py        # Original Dashboard
+│       ├── prediction.py       # AI Prediction
+│       ├── trade_now.py        # Paper Trading
+│       ├── data_feed.py        # Yahoo Finance Data
+│       ├── indicators.py       # Technical Indicators
+│       ├── signals.py          # Signal Generation
+│       ├── trader.py           # Portfolio Management
+│       └── ml_model.py         # ML Predictions
+├── requirements.txt
+├── README.md
+└── LICENSE
+```
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Streamlit, Plotly
-- **ML**: XGBoost, Scikit-learn
-- **Data**: Yahoo Finance (yfinance)
-- **Analysis**: Pandas, NumPy
+| Category | Technologies |
+|----------|-------------|
+| **Frontend** | Streamlit, Plotly |
+| **ML** | XGBoost, Scikit-learn |
+| **Data** | Yahoo Finance (yfinance) |
+| **Analysis** | Pandas, NumPy |
+| **API** | Requests |
+
+## 📊 Technical Indicators
+
+- **Trend**: SMA 20/50, EMA
+- **Momentum**: RSI, MACD, Stochastic, CCI
+- **Volatility**: Bollinger Bands, ATR
+- **Volume**: OBV, Volume SMA
 
 ## ⚠️ Disclaimer
 
-This project is for educational purposes only. Not financial advice.
+**This software is for educational and informational purposes only.**
+
+- Not financial advice
+- Past performance does not guarantee future results
+- Always do your own research before trading
+- The developers are not responsible for any financial losses
 
 ---
 
-**Built with ❤️ by Saurabh**
+**Built with ❤️ by [Saurabh](https://github.com/quitsaurabhverma2008-sketch)**
+
+*© 2024 AI Brain Pro. All rights reserved.*
