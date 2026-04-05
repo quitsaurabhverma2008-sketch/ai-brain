@@ -601,8 +601,19 @@ def run_backtest(df: pd.DataFrame, initial_capital: float,
                  start_date: datetime, end_date: datetime) -> dict:
     """Run backtest on historical data"""
     
-    # Filter by date
-    df_test = df[(df.index >= start_date) & (df.index <= end_date)].copy()
+    # Make dates timezone-naive for comparison
+    df_index = df.index
+    if df_index.tz is not None:
+        df_index = df_index.tz_localize(None)
+        df_temp = df.copy()
+        df_temp.index = df_index
+    else:
+        df_temp = df
+    
+    start_dt = datetime.combine(start_date, datetime.min.time())
+    end_dt = datetime.combine(end_date, datetime.max.time())
+    
+    df_test = df_temp[(df_index >= start_dt) & (df_index <= end_dt)].copy()
     
     if len(df_test) < 50:
         return {'error': 'Insufficient data for backtest'}
@@ -841,7 +852,7 @@ def main():
                 
                 # Create chart
                 fig = create_candlestick_chart(df, symbol)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.error("Insufficient data for analysis")
         
@@ -960,7 +971,7 @@ def main():
             
             st.dataframe(
                 df_signals.style.map(color_signal, subset=['Signal']),
-                use_container_width=True,
+                width='stretch',
                 hide_index=True
             )
     
@@ -982,7 +993,7 @@ def main():
             show_bands = st.checkbox("Show Confidence Bands", value=True)
             show_indicators = st.checkbox("Show Technical Indicators", value=True)
             
-            if st.button("🔮 Generate Prediction", use_container_width=True):
+            if st.button("🔮 Generate Prediction", width='stretch'):
                 with st.spinner("Analyzing market data..."):
                     time.sleep(2)  # Simulate processing
         
@@ -1008,7 +1019,7 @@ def main():
                     predictions.append(current)
                 
                 fig = create_prediction_chart(df, predictions, symbol)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
                 
                 # Prediction Summary
                 pred_change = ((predictions[-1] - last_price) / last_price) * 100
@@ -1069,7 +1080,7 @@ def main():
             ["RSI + MACD Crossover", "Bollinger Bands", "SMA Crossover", "All Signals Combined"]
         )
         
-        if st.button("▶️ Run Backtest", use_container_width=True):
+        if st.button("▶️ Run Backtest", width='stretch'):
             with st.spinner("Running backtest simulation..."):
                 data_feed = DataFeed()
                 df = data_feed.get_intraday_data(symbol, "1h", "2y")
@@ -1123,7 +1134,7 @@ def main():
                             yaxis_title="Portfolio Value ($)"
                         )
                         
-                        st.plotly_chart(fig_eq, use_container_width=True)
+                        st.plotly_chart(fig_eq, width='stretch')
                         
                         # Trade History
                         st.markdown("### 📋 Trade History")
@@ -1137,7 +1148,7 @@ def main():
                                 'entry': 'Entry', 'exit': 'Exit', 'pnl': 'P&L', 
                                 'pnl_pct': 'P&L %', 'date': 'Date'
                             })
-                            st.dataframe(trades_df, use_container_width=True, hide_index=True)
+                            st.dataframe(trades_df, width='stretch', hide_index=True)
                     else:
                         st.error(results['error'])
                 else:
@@ -1158,7 +1169,7 @@ def main():
         with col3:
             order_type = st.selectbox("Order Type", ["MARKET", "LIMIT"])
         
-        if st.button("📊 Execute Trade", use_container_width=True):
+        if st.button("📊 Execute Trade", width='stretch'):
             data_feed = DataFeed()
             price = data_feed.get_live_quote(symbol)
             if price:
@@ -1199,7 +1210,7 @@ def main():
                 'P&L %': f"{t.pnl_percent:.2f}%"
             } for t in portfolio.trade_history[-10:]])
             
-            st.dataframe(history_df, use_container_width=True, hide_index=True)
+            st.dataframe(history_df, width='stretch', hide_index=True)
     
     # ============ SETTINGS ============
     else:
