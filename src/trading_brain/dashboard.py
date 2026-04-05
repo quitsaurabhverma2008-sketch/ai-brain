@@ -550,8 +550,10 @@ def create_prediction_chart(df: pd.DataFrame, predicted_prices: list, symbol: st
     # Prediction zone
     if predicted_prices:
         last_date = df.index[-1]
+        if hasattr(last_date, 'tz') and last_date.tz is not None:
+            last_date = last_date.tz_localize(None)
         pred_dates = pd.date_range(start=last_date + timedelta(hours=1), 
-                                   periods=len(predicted_prices), freq='H')
+                                   periods=len(predicted_prices), freq=pd.Timedelta(hours=1))
         
         fig.add_trace(
             go.Scatter(
