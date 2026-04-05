@@ -1166,9 +1166,11 @@ def main():
         
         if st.button("📊 Execute Trade", width='stretch'):
             data_feed = DataFeed()
-            price = data_feed.get_live_quote(symbol)
-            if price:
-                st.success(f"Order executed: {trade_type} {quantity} {symbol} @ ${price:.2f}")
+            quote = data_feed.get_live_quote(symbol)
+            if quote and isinstance(quote, dict) and quote.get('price'):
+                st.success(f"Order executed: {trade_type} {quantity} {symbol} @ ${quote['price']:.2f}")
+            else:
+                st.error(f"Could not fetch price for {symbol}")
         
         st.markdown("---")
         
