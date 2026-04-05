@@ -913,37 +913,34 @@ def main():
             with col_s2:
                 st.markdown("### 🤖 AI Signal")
                 
-                if signal == "BUY":
-                    st.markdown('<div class="signal-badge signal-buy">📈 BUY</div>', unsafe_allow_html=True)
-                elif signal == "SELL":
-                    st.markdown('<div class="signal-badge signal-sell">📉 SELL</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="signal-badge signal-hold">⏸️ HOLD</div>', unsafe_allow_html=True)
+                signal_color = '#00d68f' if signal == 'BUY' else '#ff3d71' if signal == 'SELL' else '#8b949e'
+                signal_bg = 'rgba(0, 214, 143, 0.2)' if signal == 'BUY' else 'rgba(255, 61, 113, 0.2)' if signal == 'SELL' else 'rgba(139, 148, 158, 0.2)'
+                signal_border = '#00d68f' if signal == 'BUY' else '#ff3d71' if signal == 'SELL' else '#8b949e'
                 
-                st.markdown(f"""
-                <div class="metric-card" style="margin-top: 16px;">
-                    <div class="metric-label">Signal Score</div>
-                    <div class="metric-value">{score}/100</div>
-                    <div class="metric-change neutral">Confidence: {abs(score-50)*2}%</div>
+                st.html(f"""
+                <div style="background: linear-gradient(135deg, {signal_bg}, rgba(22, 27, 34, 0.7)); border: 2px solid {signal_border}; border-radius: 8px; padding: 12px 20px; text-align: center; margin-bottom: 16px;">
+                    <span style="font-family: 'JetBrains Mono'; font-size: 18px; font-weight: 700; color: {signal_color}; letter-spacing: 2px;">
+                        {signal}
+                    </span>
                 </div>
-                """, unsafe_allow_html=True)
+                <div style="background: linear-gradient(145deg, #161b22 0%, rgba(22, 27, 34, 0.7) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 16px; margin-top: 16px;">
+                    <div style="color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">Signal Score</div>
+                    <div style="font-family: 'JetBrains Mono'; font-size: 28px; font-weight: 700; color: #fff;">{score}/100</div>
+                    <div style="color: #8b949e; font-size: 12px; margin-top: 4px;">Confidence: {abs(score-50)*2}%</div>
+                </div>
+                """)
                 
                 st.markdown("---")
                 
                 if details:
-                    rsi_cls = "positive" if details['rsi'] < 50 else "negative"
-                    trend_cls = "positive" if details['trend'] == 'UPTREND' else "negative"
-                    ema_cls = "positive" if details['ema_cross'] == 'above' else "negative"
-                    macd_cls = "positive" if details['macd_bullish'] else "negative"
-                    
-                    st.markdown(f"""
-                    <div style="font-size: 13px;">
-                        <p><strong>RSI (14):</strong> <span class="{rsi_cls}"> {details['rsi']:.1f}</span></p>
-                        <p><strong>Trend:</strong> <span class="{trend_cls}">{details['trend']}</span></p>
-                        <p><strong>EMA:</strong> <span class="{ema_cls}">{details['ema_cross'].upper()} EMA</span></p>
-                        <p><strong>MACD:</strong> <span class="{macd_cls}">{"BULLISH" if details['macd_bullish'] else "BEARISH"}</span></p>
+                    st.html(f"""
+                    <div style="font-size: 13px; color: #fff;">
+                        <p><strong>RSI (14):</strong> <span style="color: {'#00d68f' if details['rsi'] < 50 else '#ff3d71'};"> {details['rsi']:.1f}</span></p>
+                        <p><strong>Trend:</strong> <span style="color: {'#00d68f' if details['trend'] == 'UPTREND' else '#ff3d71'};">{details['trend']}</span></p>
+                        <p><strong>EMA:</strong> <span style="color: {'#00d68f' if details['ema_cross'] == 'above' else '#ff3d71'};">{details['ema_cross'].upper()} EMA</span></p>
+                        <p><strong>MACD:</strong> <span style="color: {'#00d68f' if details['macd_bullish'] else '#ff3d71'};">{"BULLISH" if details['macd_bullish'] else "BEARISH"}</span></p>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
         else:
             st.warning("No data available for the selected symbol. Please try another.")
     
@@ -954,58 +951,56 @@ def main():
             st.markdown("### 🧠 AI Trading Strategy")
             
             if details:
-                # Pre-compute values for HTML
                 price_change_class = "positive" if price_change >= 0 else "negative"
                 rsi_class = "positive" if details['rsi'] < 50 else "negative"
                 macd_class = "positive" if details['macd_bullish'] else "negative"
                 macd_sign = "+" if df['MACD'].iloc[-1] >= 0 else ""
                 
-                html_content = f"""
-                <div class="portfolio-card">
-                    <h4 style="margin-top: 0;">Signal Analysis for {symbol}</h4>
-                    <hr style="border-color: var(--border-color);">
+                st.html(f"""
+                <div style="background: linear-gradient(145deg, #161b22 0%, rgba(22, 27, 34, 0.8) 100%); border: 1px solid #30363d; border-radius: 12px; padding: 20px;">
+                    <h4 style="margin-top: 0; color: #fff;">Signal Analysis for {symbol}</h4>
+                    <hr style="border-color: #30363d;">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
                         <div>
-                            <p style="color: var(--text-secondary); margin: 0; font-size: 11px;">CURRENT PRICE</p>
-                            <p style="font-family: 'JetBrains Mono'; font-size: 24px; margin: 4px 0;">${latest_price:.2f}</p>
-                            <p class="{price_change_class}" style="margin: 0; font-size: 12px;">
+                            <p style="color: #8b949e; margin: 0; font-size: 11px;">CURRENT PRICE</p>
+                            <p style="font-family: 'JetBrains Mono'; font-size: 24px; margin: 4px 0; color: #fff;">${latest_price:.2f}</p>
+                            <p style="color: {'#00d68f' if price_change >= 0 else '#ff3d71'}; margin: 0; font-size: 12px;">
                                 {price_change:+.2f} ({price_change_pct:+.2f}%)
                             </p>
                         </div>
                         <div>
-                            <p style="color: var(--text-secondary); margin: 0; font-size: 11px;">RECOMMENDATION</p>
-                            <p style="font-size: 20px; margin: 4px 0;">{signal}</p>
-                            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">Score: {score}/100</p>
+                            <p style="color: #8b949e; margin: 0; font-size: 11px;">RECOMMENDATION</p>
+                            <p style="font-size: 20px; margin: 4px 0; color: {'#00d68f' if signal == 'BUY' else '#ff3d71' if signal == 'SELL' else '#8b949e'};">{signal}</p>
+                            <p style="margin: 0; font-size: 12px; color: #8b949e;">Score: {score}/100</p>
                         </div>
                     </div>
                     
-                    <hr style="border-color: var(--border-color); margin: 20px 0;">
+                    <hr style="border-color: #30363d; margin: 20px 0;">
                     
-                    <h5 style="margin-bottom: 12px;">Technical Indicators</h5>
+                    <h5 style="margin-bottom: 12px; color: #fff;">Technical Indicators</h5>
                     <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
-                            RSI: <strong class="{rsi_class}">{details['rsi']:.1f}</strong>
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
+                            RSI: <strong style="color: {'#00d68f' if details['rsi'] < 50 else '#ff3d71'};">{details['rsi']:.1f}</strong>
                         </span>
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
                             EMA 20: <strong>${df['EMA_20'].iloc[-1]:.2f}</strong>
                         </span>
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
                             EMA 50: <strong>${df['EMA_50'].iloc[-1]:.2f}</strong>
                         </span>
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
-                            MACD: <strong class="{macd_class}">{macd_sign}{df['MACD'].iloc[-1]:.4f}</strong>
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
+                            MACD: <strong style="color: {'#00d68f' if details['macd_bullish'] else '#ff3d71'};">{macd_sign}{df['MACD'].iloc[-1]:.4f}</strong>
                         </span>
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
                             BB Upper: <strong>${df['BB_Upper'].iloc[-1]:.2f}</strong>
                         </span>
-                        <span style="background: var(--bg-card); padding: 6px 12px; border-radius: 6px; font-size: 12px;">
+                        <span style="background: #161b22; padding: 6px 12px; border-radius: 6px; font-size: 12px; color: #fff;">
                             BB Lower: <strong>${df['BB_Lower'].iloc[-1]:.2f}</strong>
                         </span>
                     </div>
                 </div>
-                """
-                st.markdown(html_content, unsafe_allow_html=True)
+                """)
         
         with col_ai2:
             st.markdown("### 📊 Prediction Engine")
