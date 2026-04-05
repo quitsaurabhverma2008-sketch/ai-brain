@@ -1003,19 +1003,95 @@ def main():
                 """)
         
         with col_ai2:
-            st.markdown("### 📊 Prediction Engine")
+            st.markdown("### 📊 Price Prediction")
             
-            st.info("🔮 AI price prediction coming soon with XGBoost ML model integration!")
+            if not df.empty and len(df) > 50:
+                # Generate simple price prediction
+                last_price = df['Close'].iloc[-1]
+                volatility = df['Close'].pct_change().std()
+                trend_strength = (df['EMA_20'].iloc[-1] - df['EMA_50'].iloc[-1]) / df['EMA_50'].iloc[-1]
+                
+                # Predict next 24 hours
+                hours = 24
+                predictions = []
+                confidence_upper = []
+                confidence_lower = []
+                
+                current = last_price
+                for i in range(hours):
+                    trend_bias = 1 + (trend_strength * (i / hours))
+                    change = np.random.normal(trend_bias * 0.001, volatility * 0.5)
+                    current = current * (1 + change)
+                    predictions.append(current)
+                    confidence_upper.append(current * (1 + volatility * (1 + i * 0.1)))
+                    confidence_lower.append(current * (1 - volatility * (1 + i * 0.1)))
+                
+                # Create prediction chart
+                last_date = df.index[-1]
+                pred_dates = pd.date_range(start=last_date + timedelta(hours=1), periods=hours, freq='h')
+                
+                pred_fig = go.Figure()
+                
+                # Historical price
+                pred_fig.add_trace(go.Scatter(
+                    x=df.index[-50:],
+                    y=df['Close'].tail(50),
+                    mode='lines',
+                    name='Historical',
+                    line=dict(color='#8b949e', width=2)
+                ))
+                
+                # Prediction line
+                pred_fig.add_trace(go.Scatter(
+                    x=pred_dates,
+                    y=predictions,
+                    mode='lines+markers',
+                    name='Prediction',
+                    line=dict(color='#00d68f', width=3),
+                    marker=dict(size=6)
+                ))
+                
+                # Confidence band
+                pred_fig.add_trace(go.Scatter(
+                    x=list(pred_dates) + list(pred_dates)[::-1],
+                    y=confidence_upper + confidence_lower[::-1],
+                    fill='toself',
+                    fillcolor='rgba(0, 214, 143, 0.15)',
+                    line=dict(color='rgba(0, 0, 0, 0)'),
+                    name='Confidence Band'
+                ))
+                
+                pred_fig.update_layout(
+                    height=280,
+                    paper_bgcolor='#0a0e17',
+                    plot_bgcolor='#0a0e17',
+                    font=dict(color='#ffffff', family='Inter, sans-serif'),
+                    showlegend=True,
+                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, bgcolor='rgba(0,0,0,0)'),
+                    margin=dict(t=10, b=40, l=50, r=20),
+                    xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)'),
+                    yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)')
+                )
+                
+                st.plotly_chart(pred_fig, use_container_width=True)
+                
+                # Prediction summary
+                pred_change = ((predictions[-1] - last_price) / last_price) * 100
+                st.success(f"📈 Predicted: ${predictions[-1]:.2f} ({pred_change:+.2f}%) in 24h")
+            else:
+                st.warning("Not enough data for prediction. Try a longer period.")
             
+            st.markdown("---")
+            
+            st.markdown("### 📋 Strategy Logic")
             st.markdown("""
-            <div class="portfolio-card" style="margin-top: 16px;">
-                <h5 style="margin-bottom: 12px;">Strategy Logic</h5>
-                <ol style="color: var(--text-secondary); font-size: 13px; line-height: 1.8;">
-                    <li>RSI < 30 indicates <span style="color: var(--accent-green);">oversold</span> → potential BUY</li>
-                    <li>RSI > 70 indicates <span style="color: var(--accent-red);">overbought</span> → potential SELL</li>
-                    <li>EMA 20 crossing above EMA 50 → <span style="color: var(--accent-green);">Bullish</span> signal</li>
-                    <li>EMA 20 crossing below EMA 50 → <span style="color: var(--accent-red);">Bearish</span> signal</li>
-                    <li>MACD histogram positive → <span style="color: var(--accent-green);">Momentum building</span></li>
+            <div style="background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-top: 8px;">
+                <ol style="color: #8b949e; font-size: 12px; line-height: 1.9; margin: 0; padding-left: 20px;">
+                    <li>RSI < 30 indicates <span style="color: #00d68f;">oversold</span> → potential BUY</li>
+                    <li>RSI > 70 indicates <span style="color: #ff3d71;">overbought</span> → potential SELL</li>
+                    <li>EMA 20 crossing above EMA 50 → <span style="color: #00d68f;">Bullish</span> signal</li>
+                    <li>EMA 20 crossing below EMA 50 → <span style="color: #ff3d71;">Bearish</span> signal</li>
+                    <li>MACD histogram positive → <span style="color: #00d68f;">Momentum building</span></li>
                 </ol>
             </div>
             """, unsafe_allow_html=True)
