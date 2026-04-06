@@ -373,7 +373,6 @@ def create_main_chart(df: pd.DataFrame, show_ema20: bool, show_ema50: bool, show
     fig = make_subplots(
         rows=4, cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.04,
         row_heights=[0.5, 0.15, 0.15, 0.2],
         vertical_spacing=0.03
     )
